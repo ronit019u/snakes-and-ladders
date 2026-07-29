@@ -1,0 +1,164 @@
+{
+  "sessions": {
+    "active_room": {
+      "sessionId": "active_room",
+      "ownerId": "p_alice",
+      "gameStatus": "InProgress",
+      "createdAt": "2026-07-29T10:00:00.000Z",
+      "startedAt": "2026-07-29T10:05:00.000Z",
+      "winnerId": null,
+      "maxPlayers": 25,
+      "usedQuestionIds": ["Q001", "Q003"],
+      "players": [
+        {
+          "playerId": "p_alice",
+          "username": "Alice",
+          "currentTile": 42,
+          "tokenColor": "#FF0000",
+          "turnStatus": "active",
+          "inventory": ["rocket", "bomb"]
+        },
+        {
+          "playerId": "p_bob",
+          "username": "Bob",
+          "currentTile": 38,
+          "tokenColor": "#00FF00",
+          "turnStatus": "active",
+          "inventory": ["rocket"]
+        }
+      ]
+    },
+    "completed_room": {
+      "sessionId": "completed_room",
+      "ownerId": "p_charlie",
+      "gameStatus": "Completed",
+      "createdAt": "2026-07-29T09:00:00.000Z",
+      "startedAt": "2026-07-29T09:05:00.000Z",
+      "winnerId": "p_charlie",
+      "maxPlayers": 25,
+      "usedQuestionIds": ["Q002", "Q004", "Q005", "Q006", "Q007", "Q008"],
+      "players": [
+        {
+          "playerId": "p_charlie",
+          "username": "Charlie",
+          "currentTile": 100,
+          "tokenColor": "#0000FF",
+          "turnStatus": "active",
+          "inventory": []
+        },
+        {
+          "playerId": "p_diana",
+          "username": "Diana",
+          "currentTile": 87,
+          "tokenColor": "#FFFF00",
+          "turnStatus": "inactive",
+          "inventory": ["bomb"]
+        }
+      ]
+    }
+  },
+  "questions": [
+    {
+      "questionId": "Q001",
+      "questionText": "What does HTTP stand for?",
+      "options": [
+        "Hyper Text Transfer Protocol",
+        "High Tech Transfer Protocol",
+        "Hyper Transfer Text Protocol",
+        "None of the above"
+      ],
+      "correctAnswer": "A",
+      "difficulty": "Easy",
+      "topic": "Network Security"
+    },
+    {
+      "questionId": "Q002",
+      "questionText": "What is the default port for HTTPS?",
+      "options": ["80", "443", "8080", "22"],
+      "correctAnswer": "B",
+      "difficulty": "Easy",
+      "topic": "Network Security"
+    },
+    {
+      "questionId": "Q003",
+      "questionText": "Which of these is a NoSQL database?",
+      "options": ["MySQL", "PostgreSQL", "MongoDB", "Oracle"],
+      "correctAnswer": "C",
+      "difficulty": "Medium",
+      "topic": "Database Security"
+    },
+    {
+      "questionId": "Q004",
+      "questionText": "What does CSS stand for?",
+      "options": [
+        "Cascading Style Sheets",
+        "Creative Style Sheets",
+        "Computer Style Sheets",
+        "Colorful Style Sheets"
+      ],
+      "correctAnswer": "A",
+      "difficulty": "Easy",
+      "topic": "Web Security"
+    },
+    {
+      "questionId": "Q005",
+      "questionText": "Which HTML tag is used to create a hyperlink?",
+      "options": ["<link>", "<a>", "<href>", "<url>"],
+      "correctAnswer": "B",
+      "difficulty": "Easy",
+      "topic": "Web Security"
+    },
+    {
+      "questionId": "Q006",
+      "questionText": "What is the correct way to declare a variable in JavaScript?",
+      "options": ["var x = 5;", "variable x = 5;", "v x = 5;", "let x: 5;"],
+      "correctAnswer": "A",
+      "difficulty": "Medium",
+      "topic": "Application Security"
+    },
+    {
+      "questionId": "Q007",
+      "questionText": "Which protocol is used to send email?",
+      "options": ["HTTP", "FTP", "SMTP", "SSH"],
+      "correctAnswer": "C",
+      "difficulty": "Medium",
+      "topic": "Network Security"
+    },
+    {
+      "questionId": "Q008",
+      "questionText": "What is the file extension for a Java source file?",
+      "options": [".java", ".class", ".jav", ".js"],
+      "correctAnswer": "A",
+      "difficulty": "Easy",
+      "topic": "Application Security"
+    },
+    {
+      "questionId": "Q009",
+      "questionText": "What is the output of 2 + '2' in JavaScript?",
+      "options": ["4", "'4'", "'22'", "Error"],
+      "correctAnswer": "C",
+      "difficulty": "Medium",
+      "topic": "Application Security"
+    },
+    {
+      "questionId": "Q010",
+      "questionText": "Which company developed Node.js?",
+      "options": ["Google", "Facebook", "Microsoft", "Joyent"],
+      "correctAnswer": "D",
+      "difficulty": "Hard",
+      "topic": "Application Security"
+    }
+  ],
+  "presetsLibrary": {
+    "default": {
+      "flashingProb": { "blue": 0.5, "red": 0.5 },
+      "earthquakeMagnitude": 3,
+      "bonusInterval": 180
+    },
+    "fast": {
+      "flashingProb": { "blue": 0.7, "red": 0.3 },
+      "earthquakeMagnitude": 5,
+      "bonusInterval": 120
+    }
+  }
+}
