@@ -1,6 +1,6 @@
 // services/gameLogic.js
 
-// ---------- 蛇梯位置 ----------
+// ---------- Ladders and Snakes positions ----------
 const LADDERS = [
   [2, 23], [6, 45], [20, 59], [52, 71],
   [57, 96], [71, 92], [88, 99], [95, 98]
@@ -11,11 +11,11 @@ const SNAKES = [
   [62, 19], [64, 60], [87, 24], [93, 73]
 ];
 
-// ---------- 闪光格位置（硬编码） ----------
+// ---------- Flashing tiles (hardcoded positions) ----------
 const FLASHING_TILES = [5, 12, 28, 35, 42, 58, 65, 72, 88, 95];
 
 
-// ---------- 默认预设 ----------
+// ---------- Default preset ----------
 const DEFAULT_PRESET = {
   presetId: 'default',
   displayName: 'Default',
@@ -47,7 +47,7 @@ const DEFAULT_PRESET = {
 };
 
 
-// ---------- 获取预设（带默认值合并） ----------
+// ---------- Get preset with default fallback ----------
 function getPreset(preset) {
   if (!preset) return JSON.parse(JSON.stringify(DEFAULT_PRESET));
 
@@ -89,7 +89,7 @@ function getPreset(preset) {
 }
 
 
-// ---------- 道具系统 ----------
+// ---------- Item system ----------
 function getItemSteps(itemType, preset) {
   const config = getPreset(preset);
   const itemConfig = config.items[itemType];
@@ -98,13 +98,13 @@ function getItemSteps(itemType, preset) {
 }
 
 
-// ---------- 奖励系统 ----------
+// ---------- Bonus system ----------
 function getBonusSteps(preset) {
   return getPreset(preset).bonus.forwardSteps;
 }
 
 
-// ---------- 骰子系统 ----------
+// ---------- Dice system ----------
 function generateDiceValue() {
   return Math.floor(Math.random() * 6) + 1;
 }
@@ -114,7 +114,7 @@ function calculateLandingTile(currentTile, diceValue) {
 }
 
 
-// ---------- 格子类型 ----------
+// ---------- Tile type detection ----------
 function getTileType(tile) {
   if (LADDERS.some(l => l[0] === tile)) return 'ladder';
   if (SNAKES.some(s => s[0] === tile)) return 'snake';
@@ -122,22 +122,21 @@ function getTileType(tile) {
 }
 
 
-// ---------- 闪光格 ----------
+// ---------- Flashing tile effects ----------
 function isFlashingTile(tile) {
   return FLASHING_TILES.includes(tile);
 }
 
-// 从预设读取闪光格效果
+// Get flashing tile effect from preset
 function getFlashingTileEffect(tile, preset) {
   const config = getPreset(preset);
   const rand = Math.random();
   const { blueProb, redProb, blueEffect, redEffect } = config.flashingTile;
 
   if (rand < blueProb) {
-    // 蓝色闪光：可能获得道具
+    // Blue flash: may grant an item
     const hasItem = Math.random() < blueEffect.itemProb;
     if (hasItem) {
-      // 只返回预设中启用的道具
       const availableItems = blueEffect.itemTypes.filter(type => {
         const itemConfig = config.items[type];
         return itemConfig && itemConfig.enabled;
@@ -149,7 +148,7 @@ function getFlashingTileEffect(tile, preset) {
     }
     return { type: 'nothing' };
   } else if (rand < blueProb + redProb) {
-    // 红色闪光：惩罚
+    // Red flash: penalty
     return { type: 'penalty', steps: redEffect.penaltySteps };
   }
 
@@ -157,25 +156,25 @@ function getFlashingTileEffect(tile, preset) {
 }
 
 
-// ---------- 导出 ----------
+// ---------- Exports ----------
 module.exports = {
-  // 数据
+  // Data
   LADDERS,
   SNAKES,
   FLASHING_TILES,
   DEFAULT_PRESET,
 
-  // 预设系统
+  // Preset system
   getPreset,
   getItemSteps,
   getBonusSteps,
 
-  // 骰子/移动
+  // Dice / movement
   generateDiceValue,
   calculateLandingTile,
   getTileType,
 
-  // 闪光格
+  // Flashing tiles
   isFlashingTile,
   getFlashingTileEffect
 };

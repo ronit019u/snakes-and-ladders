@@ -1,11 +1,14 @@
 // services/socketService.js
+
 let ioInstance = null;
 
+// Initialize the Socket.io instance
 function initSocket(io) {
     ioInstance = io;
     console.log('[SocketService] Initialized');
 }
 
+// Broadcast bonus round result to all players in a session
 function broadcastBonusResult(sessionId, data) {
     if (ioInstance) {
         ioInstance.to(sessionId).emit('bonus_result', data);
@@ -17,6 +20,7 @@ function broadcastBonusResult(sessionId, data) {
     }
 }
 
+// Generic broadcast function for other game events
 function broadcastGameEvent(sessionId, event, data) {
     if (ioInstance) {
         ioInstance.to(sessionId).emit(event, data);
