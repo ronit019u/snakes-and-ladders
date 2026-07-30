@@ -130,6 +130,160 @@
           }
         }
       }
+    },
+    "ms7cncpjn5m11z": {
+      "sessionId": "ms7cncpjn5m11z",
+      "ownerId": "pms7cncpjts51bw",
+      "gameStatus": "waiting",
+      "createdAt": "2026-07-30T10:07:03.715Z",
+      "startedAt": null,
+      "winnerId": null,
+      "maxPlayers": 25,
+      "usedQuestionIds": [],
+      "players": [
+        {
+          "playerId": "pms7cncpjts51bw",
+          "username": "Alice",
+          "currentTile": 0,
+          "tokenColor": "#FF0000",
+          "turnStatus": "active"
+        }
+      ]
+    },
+    "ms7cnyoqswhr9i": {
+      "sessionId": "ms7cnyoqswhr9i",
+      "ownerId": "pms7cnyoq8af9ud",
+      "gameStatus": "waiting",
+      "createdAt": "2026-07-30T10:07:32.189Z",
+      "startedAt": null,
+      "winnerId": null,
+      "maxPlayers": 25,
+      "usedQuestionIds": [],
+      "players": [
+        {
+          "playerId": "pms7cnyoq8af9ud",
+          "username": "Alice",
+          "currentTile": 0,
+          "tokenColor": "#FF0000",
+          "turnStatus": "active"
+        }
+      ]
+    },
+    "ms7cqfcub3kuft": {
+      "sessionId": "ms7cqfcub3kuft",
+      "ownerId": "pms7cqfcu0it7ln",
+      "gameStatus": "waiting",
+      "createdAt": "2026-07-30T10:09:27.104Z",
+      "startedAt": null,
+      "winnerId": null,
+      "maxPlayers": 25,
+      "usedQuestionIds": [],
+      "players": [
+        {
+          "playerId": "pms7cqfcu0it7ln",
+          "username": "Alice",
+          "currentTile": 0,
+          "tokenColor": "#FF0000",
+          "turnStatus": "active"
+        }
+      ]
+    },
+    "ms7cru6sigzt2n": {
+      "sessionId": "ms7cru6sigzt2n",
+      "ownerId": "pms7cru6scbdy3q",
+      "gameStatus": "waiting",
+      "createdAt": "2026-07-30T10:10:32.981Z",
+      "startedAt": null,
+      "winnerId": null,
+      "maxPlayers": 25,
+      "usedQuestionIds": [],
+      "players": [
+        {
+          "playerId": "pms7cru6scbdy3q",
+          "username": "Alice",
+          "currentTile": 0,
+          "tokenColor": "#FF0000",
+          "turnStatus": "active"
+        }
+      ]
+    },
+    "ms7cxt51hua8z8": {
+      "sessionId": "ms7cxt51hua8z8",
+      "ownerId": "pms7cxt51gfrs2z",
+      "gameStatus": "InProgress",
+      "createdAt": "2026-07-30T10:15:11.558Z",
+      "startedAt": "2026-07-30T10:15:56.338Z",
+      "winnerId": null,
+      "maxPlayers": 25,
+      "usedQuestionIds": [],
+      "players": [
+        {
+          "playerId": "pms7cxt51gfrs2z",
+          "username": "Alice",
+          "currentTile": 0,
+          "tokenColor": "#FF0000",
+          "turnStatus": "active"
+        },
+        {
+          "playerId": "pms7cxwqzx4i1w0",
+          "username": "Bob",
+          "currentTile": 0,
+          "tokenColor": "#00FF00",
+          "turnStatus": "active"
+        }
+      ]
+    },
+    "ms7czy3ndnf6bn": {
+      "sessionId": "ms7czy3ndnf6bn",
+      "ownerId": "pms7czy3nf2llws",
+      "gameStatus": "InProgress",
+      "createdAt": "2026-07-30T10:16:51.302Z",
+      "startedAt": "2026-07-30T10:20:12.508Z",
+      "winnerId": null,
+      "maxPlayers": 25,
+      "usedQuestionIds": [],
+      "players": [
+        {
+          "playerId": "pms7czy3nf2llws",
+          "username": "Alice",
+          "currentTile": 0,
+          "tokenColor": "#FF0000",
+          "turnStatus": "active"
+        },
+        {
+          "playerId": "pms7d3wl3bcye93",
+          "username": "Bob",
+          "currentTile": 0,
+          "tokenColor": "#00FF00",
+          "turnStatus": "active"
+        }
+      ]
+    },
+    "ms7dk0giaov2tb": {
+      "sessionId": "ms7dk0giaov2tb",
+      "ownerId": "pms7dk0gio45kp0",
+      "gameStatus": "InProgress",
+      "createdAt": "2026-07-30T10:32:27.476Z",
+      "startedAt": "2026-07-30T10:34:28.615Z",
+      "winnerId": null,
+      "maxPlayers": 25,
+      "usedQuestionIds": [],
+      "players": [
+        {
+          "playerId": "pms7dk0gio45kp0",
+          "username": "Alice",
+          "currentTile": 0,
+          "tokenColor": "#FF0000",
+          "turnStatus": "active"
+        },
+        {
+          "playerId": "pms7dlzkyr967u6",
+          "username": "Bob",
+          "currentTile": 0,
+          "tokenColor": "#00FF00",
+          "turnStatus": "active"
+        }
+      ]
     }
   },
   "questions": [

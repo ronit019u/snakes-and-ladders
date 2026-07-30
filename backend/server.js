@@ -15,12 +15,12 @@ const adminRoutes = require('./routes/adminRoutes');
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
-  cors: { origin: '*', credentials: true }
+  cors: { origin: true, credentials: true }
 });
 
 // ---------- 中间件（请求的“安检门”）----------
 app.use(cors({
-  origin: '*',
+  origin: true,
   credentials: true
 }));
 app.use(express.json());              // 让 req.body 能读到 JSON
@@ -70,7 +70,7 @@ app.use(fileUpload({
 }));
 
 // ---------- 启动 ----------
-const PORT = 3000;
+const PORT = 5000;
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
