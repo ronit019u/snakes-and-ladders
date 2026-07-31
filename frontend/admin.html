@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSnake · Game Master</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+
+  <div class="topbar">
+    <span class="dot" id="socket-dot"></span> Socket: <span id="socket-status">connecting…</span>
+    &nbsp;|&nbsp; API: <input type="text" id="api-base" value="http://localhost:5000" style="width:190px;">
+    <button id="reconnect-api-btn" class="btn-secondary" style="margin-top:0;padding:4px 8px;">Apply</button>
+  </div>
+
+  <div class="wrap">
+    <div>
+      <!-- ===== LOGIN ===== -->
+      <div class="card" id="login-card">
+        <h1>🕹️ CyberSnake — Game Master</h1>
+        <label>Admin Username</label>
+        <input type="text" id="admin-user" placeholder="admin">
+        <label>Password</label>
+        <input type="password" id="admin-pass" placeholder="••••••••">
+        <button class="btn-primary" id="login-btn">🔐 Log In</button>
+        <div id="login-msg"></div>
+      </div>
+
+      <!-- ===== SESSION SETUP (post-login) ===== -->
+      <div class="card hidden" id="setup-card">
+        <h2>Create Session</h2>
+        <label>Preset</label>
+        <select id="preset-select"><option value="default">Default</option></select>
+        <button class="btn-primary" id="create-room-btn">➕ Create Room</button>
+        <div id="setup-msg"></div>
+        <div id="session-info" class="hidden">
+          <div class="session-code" id="session-code-display"></div>
+          <button class="btn-primary" id="start-btn">▶️ Start Game</button>
+        </div>
+      </div>
+
+      <!-- ===== BOARD (post start) ===== -->
+      <div class="card hidden" id="board-card">
+        <h2>Live Board</h2>
+        <div class="board" id="board"></div>
+      </div>
+    </div>
+
+    <div>
+      <!-- ===== PLAYER LIST ===== -->
+      <div class="card hidden" id="roster-card">
+        <h2>Players (<span id="player-count">0</span>/25)</h2>
+        <div id="player-list"></div>
+      </div>
+
+      <!-- ===== PRESET CONFIG ===== -->
+      <div class="card hidden" id="preset-card">
+        <h2>Session Presets</h2>
+        <label>Preset ID (save as)</label>
+        <input type="text" id="preset-id-input" value="my_preset">
+        <div class="preset-grid">
+          <div><label>Blue Tile Prob</label><input type="number" id="p-blue" value="0.3" step="0.1" min="0" max="1"></div>
+          <div><label>Red Tile Prob</label><input type="number" id="p-red" value="0.3" step="0.1" min="0" max="1"></div>
+          <div><label>Item Prob (blue)</label><input type="number" id="p-item" value="0.5" step="0.1" min="0" max="1"></div>
+          <div><label>Red Penalty Steps</label><input type="number" id="p-penalty" value="2"></div>
+          <div><label>Earthquake Magnitude</label><input type="number" id="p-quake-mag" value="3"></div>
+          <div><label>Earthquake Interval (s)</label><input type="number" id="p-quake-int" value="60"></div>
+          <div><label>Bonus Interval (s)</label><input type="number" id="p-bonus-int" value="180"></div>
+          <div><label>Bonus Forward Steps</label><input type="number" id="p-bonus-steps" value="5"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-secondary" id="save-preset-btn">💾 Save Preset</button>
+          <button class="btn-secondary" id="load-preset-btn">📂 Load Preset</button>
+        </div>
+        <div id="preset-msg"></div>
+      </div>
+
+      <!-- ===== QUESTION BANK ===== -->
+      <div class="card hidden" id="question-card">
+        <h2>Question Bank Upload</h2>
+        <div class="file-drop">CSV format: question,optA,optB,optC,optD,correctLetter,difficulty,topic</div>
+        <input type="file" id="question-file" accept=".csv,.xlsx,.xls" style="margin-top:8px;">
+        <button class="btn-primary" id="upload-questions-btn">⬆️ Upload</button>
+        <div id="question-msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/adminApp.js"></script>
+</body>
+</html>
