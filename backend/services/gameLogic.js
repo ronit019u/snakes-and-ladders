@@ -15,6 +15,30 @@ const SNAKES = [
 const FLASHING_TILES = [5, 12, 28, 35, 42, 58, 65, 72, 88, 95];
 
 
+
+function calculateTargetTile(landingTile, isCorrect, tileType) {
+  // Check for ladder
+  const ladder = LADDERS.find(l => l[0] === landingTile);
+  if (ladder) {
+    // Correct: climb to the top; incorrect: stay put
+    return isCorrect ? ladder[1] : landingTile;
+  }
+
+  // Check for snake
+  const snake = SNAKES.find(s => s[0] === landingTile);
+  if (snake) {
+    if (isCorrect) {
+      return Math.min(100, landingTile + 1);
+    } else {
+      // Incorrect: slide down to tail only
+      return snake[1];
+    }
+  }
+
+  // Blank tile: no change
+  return landingTile;
+}
+
 // ---------- Default preset ----------
 const DEFAULT_PRESET = {
   presetId: 'default',
@@ -69,7 +93,7 @@ function getPreset(preset) {
     },
     earthquake: {
       magnitude: preset.earthquake?.magnitude ?? DEFAULT_PRESET.earthquake.magnitude,
-      frequency: preset.earthquake?.frequency ?? DEFAULT_PRESET.earthquake.frequency
+      interval: preset.earthquake?.interval ?? DEFAULT_PRESET.earthquake.interval
     },
     bonus: {
       interval: preset.bonus?.interval ?? DEFAULT_PRESET.bonus.interval,
@@ -155,6 +179,17 @@ function getFlashingTileEffect(tile, preset) {
   return { type: 'nothing' };
 }
 
+// ---------- Bonus reward system ----------
+function getBonusReward(preset) {
+  const config = getPreset(preset);
+  // Supported bonus types: forward_boost and item_grant.
+  // The reward content is read from the session preset; default values apply if not defined.
+  return {
+    type: config.bonus?.type || 'forward_boost',
+    value: config.bonus?.forwardSteps || 5
+  };
+}
+
 
 // ---------- Exports ----------
 module.exports = {
@@ -173,8 +208,10 @@ module.exports = {
   generateDiceValue,
   calculateLandingTile,
   getTileType,
+  calculateTargetTile,
 
   // Flashing tiles
   isFlashingTile,
-  getFlashingTileEffect
+  getFlashingTileEffect,
+  getBonusReward
 };

@@ -110,6 +110,7 @@ function adminCreateRoom(req, res) {
             gameStatus: 'waiting',
             createdAt: new Date().toISOString(),
             startedAt: null,
+            completedAt: null,
             winnerId: null,
             maxPlayers: 25,
             usedQuestionIds: [],
@@ -121,6 +122,7 @@ function adminCreateRoom(req, res) {
 
         // 关键：把 adminPlayerId 存入 Session，让管理员也能 start
         req.session.playerId = adminPlayerId;
+        req.session.sessionId = sessionId;
 
         return res.json({
             code: 0,
@@ -192,11 +194,20 @@ function uploadQuestions(req, res) {
         const newQuestions = [];
 
         // 解析 CSV 内容
+
+        const maxId = db.questions.reduce((max, q) => {
+            const num = parseInt(q.questionId.replace('Q', ''));
+            return num > max ? num : max;
+        }, 0);
+        let counter = 0;
+
         for (let i = startIndex; i < lines.length; i++) {
-            const parts = lines[i].split(',').map(s => s.trim());
+            // 在解析 CSV 内容的循环中，去掉字段首尾的引号
+            const parts = lines[i].split(',').map(s => s.trim().replace(/^"|"$/g, ''));
             if (parts.length >= 7) {
+                counter++;
                 newQuestions.push({
-                    questionId: 'Q' + String(db.questions.length + newQuestions.length + 1).padStart(3, '0'),
+                    questionId: 'Q' + String(maxId + counter).padStart(3, '0'),
                     questionText: parts[0],
                     options: [parts[1], parts[2], parts[3], parts[4]],
                     correctAnswer: parts[5],
@@ -215,17 +226,31 @@ function uploadQuestions(req, res) {
         }
 
         // 替换题库
-        db.questions = newQuestions;
+        const existingTexts = db.questions.map(q => q.questionText);
+        const uniqueNew = newQuestions.filter(q => !existingTexts.includes(q.questionText));
+        db.questions = db.questions.concat(uniqueNew);
         writeDB(db);
-
+        if (uniqueNew.length === 0) {
+            return res.json({
+                code: 0,
+                data: {
+                    uploaded: 0,
+                    skipped: newQuestions.length,
+                    totalQuestions: db.questions.length,
+                    message: 'All questions already exist, no new questions added'
+                },
+                msg: 'No new questions added'
+            });
+        }
         return res.json({
             code: 0,
             data: {
-                uploaded: newQuestions.length,
-                skipped: 0,
-                totalQuestions: newQuestions.length
+                uploaded: uniqueNew.length,
+                skipped: newQuestions.length - uniqueNew.length,
+                totalQuestions: db.questions.length,
+                message: `Added ${uniqueNew.length} new questions, skipped ${newQuestions.length - uniqueNew.length} duplicates`
             },
-            msg: `Successfully uploaded ${newQuestions.length} questions`
+            msg: `Successfully uploaded ${uniqueNew.length} questions`
         });
 
     } catch (error) {
@@ -358,9 +383,49 @@ function managePresets(req, res) {
     }
 }
 
+// ---------- GET /api/admin/presets ----------
+function listPresets(req, res) {
+    try {
+        // 验证管理员权限
+        if (!req.session.isAdmin) {
+            return res.json({
+                code: 2009,
+                data: null,
+                msg: 'Unauthorized: Admin access required'
+            });
+        }
+
+        const db = readDB();
+        const presetsLibrary = db.presetsLibrary || {};
+
+        // 转换为预设列表（只返回 presetId 和 displayName）
+        const presetList = Object.keys(presetsLibrary).map(key => ({
+            presetId: key,
+            displayName: presetsLibrary[key].displayName || key
+        }));
+
+        return res.json({
+            code: 0,
+            data: {
+                presets: presetList
+            },
+            msg: 'Presets retrieved successfully'
+        });
+
+    } catch (error) {
+        console.error('[List Presets Error]', error);
+        return res.json({
+            code: 5000,
+            data: null,
+            msg: 'Internal server error'
+        });
+    }
+}
+
 module.exports = {
     adminLogin,
     adminCreateRoom,
     uploadQuestions,
-    managePresets
+    managePresets,
+    listPresets
 };

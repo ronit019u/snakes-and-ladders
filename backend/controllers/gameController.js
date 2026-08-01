@@ -73,6 +73,7 @@ function create(req, res) {
             gameStatus: 'waiting',
             createdAt: new Date().toISOString(),
             startedAt: null,
+            completedAt: null,
             winnerId: null,
             maxPlayers: 25,
             usedQuestionIds: [],
@@ -82,7 +83,8 @@ function create(req, res) {
                     username: finalUsername,
                     currentTile: 0,
                     tokenColor: getNextColor([]),
-                    turnStatus: 'active'
+                    turnStatus: 'active',
+                    inventory: []
                 }
             ]
         };
@@ -213,7 +215,8 @@ function join(req, res) {
             username: finalUsername,
             currentTile: 0,
             tokenColor: getNextColor(session.players),
-            turnStatus: 'active'
+            turnStatus: 'active',
+            inventory: []
         };
 
         session.players.push(newPlayer);
@@ -265,6 +268,8 @@ function getState(req, res) {
             sessionId: session.sessionId,
             gameStatus: session.gameStatus,
             winnerId: session.winnerId || null,
+            startedAt: session.startedAt || null,
+            completedAt: session.completedAt || null,
             activePlayers: sortedPlayers.map(p => ({
                 playerId: p.playerId,
                 username: p.username,
@@ -436,6 +441,7 @@ function move(req, res) {
                 winnerId = playerId;
                 session.gameStatus = gameStatus;
                 session.winnerId = winnerId;
+                session.completedAt = new Date().toISOString();
             }
 
             // 7. 写库
@@ -450,7 +456,7 @@ function move(req, res) {
                     gameStatus: gameStatus,
                     winnerId: winnerId,
                     itemGranted: null,
-                    inventory: [] // 暂留空
+                    inventory: player.inventory || []
                 },
                 msg: 'success'
             });
@@ -472,7 +478,7 @@ function move(req, res) {
                     gameStatus: session.gameStatus,
                     winnerId: session.winnerId,
                     itemGranted: null,
-                    inventory: []
+                    inventory: player.inventory || []
                 },
                 msg: 'Rolled past 100, stay in place'
             });
@@ -487,6 +493,7 @@ function move(req, res) {
         if (landingTile === 100) {
             session.gameStatus = 'Completed';
             session.winnerId = playerId;
+            session.completedAt = new Date().toISOString();
             writeDB(db);
             return res.json({
                 code: 0,
@@ -496,7 +503,7 @@ function move(req, res) {
                     gameStatus: 'Completed',
                     winnerId: playerId,
                     itemGranted: null,
-                    inventory: []
+                    inventory: player.inventory || []
                 },
                 msg: '🎉 Player reached tile 100 and won the game!'
             });
@@ -515,7 +522,7 @@ function move(req, res) {
                     gameStatus: session.gameStatus,
                     winnerId: session.winnerId,
                     itemGranted: null,
-                    inventory: []
+                    inventory: player.inventory || []
                 },
                 msg: `Landed on ${tileType} tile, please answer quiz`
             });
@@ -530,7 +537,11 @@ function move(req, res) {
             const effect = gameLogic.getFlashingTileEffect(landingTile, session.presets);
             if (effect.type === 'item') {
                 itemGranted = effect.item;
-                // 后续需要加入 inventory（暂留）
+                // 写入 inventory
+                if (!player.inventory) player.inventory = [];
+                if (player.inventory.length < 3) {
+                    player.inventory.push(itemGranted);
+                }
             } else if (effect.type === 'penalty') {
                 finalTile = Math.max(1, landingTile - effect.steps);
                 player.currentTile = finalTile;
@@ -543,7 +554,7 @@ function move(req, res) {
                         gameStatus: session.gameStatus,
                         winnerId: session.winnerId,
                         itemGranted: null,
-                        inventory: []
+                        inventory: player.inventory || []
                     },
                     msg: `Landed on red flashing tile, moved back ${effect.steps} tiles`
                 });
@@ -563,7 +574,7 @@ function move(req, res) {
                 gameStatus: session.gameStatus,
                 winnerId: session.winnerId,
                 itemGranted: itemGranted,
-                inventory: [] // 暂留空
+                inventory: player.inventory || []
             },
             msg: isFlashing ? 'Landed on flashing tile' : 'success'
         });
@@ -642,7 +653,7 @@ function useItem(req, res) {
         }
 
         // 7. 从预设获取道具步数
-        const steps = getItemSteps(itemType, session.presets);
+        const steps = gameLogic.getItemSteps(itemType, session.presets);
         if (steps === null) {
             return res.json({
                 code: 2011,
@@ -691,7 +702,10 @@ function useItem(req, res) {
         }
 
         // 10. 从库存移除道具
-        player.inventory = player.inventory.filter(item => item !== itemType);
+        const index = player.inventory.indexOf(itemType);
+        if (index !== -1) {
+            player.inventory.splice(index, 1);
+        }
 
         // 11. 检查是否有人到达终点（火箭可能触发胜利）
         let gameStatus = session.gameStatus;
@@ -701,6 +715,7 @@ function useItem(req, res) {
             winnerId = playerId;
             session.gameStatus = gameStatus;
             session.winnerId = winnerId;
+            session.completedAt = new Date().toISOString();
         }
 
         // 12. 写库

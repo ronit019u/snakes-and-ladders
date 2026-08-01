@@ -36,6 +36,12 @@ app.use(session({
   }
 }));
 
+const fileUpload = require('express-fileupload');
+app.use(fileUpload({
+    limits: { fileSize: 5 * 1024 * 1024 },
+    abortOnLimit: true
+}));
+
 // ---------- 路由 ----------
 app.use('/api/game', gameRoutes);
 app.use('/api/question', questionRoutes);
@@ -62,12 +68,6 @@ io.on('connection', (socket) => {
 });
 
 socketService.initSocket(io);
-
-const fileUpload = require('express-fileupload');
-app.use(fileUpload({
-    limits: { fileSize: 5 * 1024 * 1024 },
-    abortOnLimit: true
-}));
 
 // ---------- 启动 ----------
 const PORT = 5000;

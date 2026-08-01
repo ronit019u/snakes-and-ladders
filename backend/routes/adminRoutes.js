@@ -15,4 +15,7 @@ router.post('/questions/upload', adminController.uploadQuestions);
 // POST /api/admin/presets - 预设管理（保存/加载）
 router.post('/presets', adminController.managePresets);
 
+// GET /api/admin/presets - 获取所有预设列表
+router.get('/presets', adminController.listPresets);
+
 module.exports = router;

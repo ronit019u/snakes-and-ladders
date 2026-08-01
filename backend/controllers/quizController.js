@@ -1,16 +1,7 @@
 // controllers/quizController.js
 const { readDB, writeDB } = require('../services/dbService');
+const gameLogic = require('../services/gameLogic');
 
-// 临时占位：计算 targetTile（后续由 Aqilah 的 gameLogic.js 替换）
-function calculateTargetTile(landingTile, isCorrect, tileType) {
-    // 这里先用简单逻辑占位，后续接入真实蛇梯计算
-    if (tileType === 'ladder') {
-        return isCorrect ? landingTile + 5 : landingTile;      // 正确前进5格，错误原地
-    } else if (tileType === 'snake') {
-        return isCorrect ? landingTile : Math.max(1, landingTile - 3); // 正确原地，错误后退3格
-    }
-    return landingTile;
-}
 
 // ---------- GET /api/question/random/:sessionId ----------
 function getRandomQuestion(req, res) {
@@ -140,7 +131,7 @@ function validateAnswer(req, res) {
 
         // 7. 计算 targetTile
         const currentTile = player.currentTile;
-        const targetTile = calculateTargetTile(currentTile, isCorrect, 'ladder');
+        const targetTile = gameLogic.calculateTargetTile(currentTile, isCorrect, 'ladder');
 
         // 8. 返回结果
         return res.json({

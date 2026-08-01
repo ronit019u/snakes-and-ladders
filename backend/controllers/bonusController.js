@@ -227,10 +227,30 @@ function submitBonusAnswer(req, res) {
         // 锁定赢家
         bonus.winnerId = playerId;
 
-        // 11. 应用奖励（前进 5 格）
-        const reward = gameLogic.getBonusReward();
-        const newTile = Math.min(100, player.currentTile + reward.value);
-        player.currentTile = newTile;
+        // 11. 应用奖励
+        const reward = gameLogic.getBonusReward(session.presets);
+        let newTile = player.currentTile;
+        let itemGranted = null;
+
+        switch (reward.type) {
+            case 'forward_boost':
+                newTile = Math.min(100, player.currentTile + reward.value);
+                player.currentTile = newTile;
+                break;
+
+            case 'item_grant':
+                itemGranted = reward.value;
+                if (!player.inventory) player.inventory = [];
+                if (player.inventory.length < 3) {
+                    player.inventory.push(itemGranted);
+                }
+                // 背包已满时，itemGranted 保留但未写入
+                break;
+
+            // 其他类型可以在这里继续扩展
+            default:
+                console.warn('[Bonus] Unknown reward type:', reward.type);
+        }
 
         // 12. 检查胜利
         let gameStatus = session.gameStatus;
@@ -240,6 +260,7 @@ function submitBonusAnswer(req, res) {
             winnerId = playerId;
             session.gameStatus = gameStatus;
             session.winnerId = winnerId;
+            session.completedAt = new Date().toISOString();
         }
 
         // 13. 写库

@@ -1,0 +1,47 @@
+Changelog – 2026-08-02
+
+List of fixes:
+
+Fixed admin being unable to start a game after creating a room (sessionId was not written to the session)
+
+Added GET /api/admin/presets endpoint to retrieve the list of saved presets
+
+Fixed 500 error when using items caused by getItemSteps not referencing gameLogic correctly
+
+Fixed crash when submitting bonus round answers due to undefined getBonusReward function
+
+Fixed bonus steps being hardcoded to 5; now read from preset configuration
+
+Fixed undefined bonusType and bonusValue in bonus round responses
+
+Fixed move endpoint always returning an empty inventory instead of the player's actual items
+
+Fixed flash tile items not being persisted to the database
+
+Fixed missing inventory field when creating new players
+
+Fixed CSV upload leaving extra quotes around fields
+
+Fixed question bank upload replacing the entire bank instead of appending
+
+Fixed uploaded count returning the number of parsed rows instead of actual new questions added
+
+Fixed totalQuestions returning the parsed count instead of the actual database total
+
+Fixed earthquake preset reading field frequency mismatch with database field interval
+
+Fixed file upload middleware being mounted after routes, causing parse failures
+
+Replaced placeholder snake and ladder movement logic with the actual mapping table
+
+Added completedAt field initialization when creating a session
+
+Added completedAt write on all victory paths to record game end time
+
+Enhanced GET /api/game/state response to include startedAt and completedAt fields
+
+Unified inventory return logic across all endpoints, using player.inventory || [] as fallback
+
+Expanded bonus reward logic to support both forward_boost and item_grant reward types
+
+Fixed item usage removing all items of the same type from inventory instead of only one.
