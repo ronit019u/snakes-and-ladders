@@ -1,6 +1,6 @@
 // js/adminApp.js
 // Entry point for admin.html — real calls against the CyberSnake backend.
-import { setApiBase } from './config.js';
+import { state, setApiBase } from './config.js';
 import { GameAPI, AdminAPI } from './apiService.js';
 import { connectSocket, onSocketConnect, onSocketDisconnect, onSocketEvent, joinRoom } from './socketService.js';
 import { buildBoard, renderTokens } from './boardData.js';
@@ -191,6 +191,7 @@ function init() {
   $('save-preset-btn').onclick = withLoadingState($('save-preset-btn'), 'Saving…', handleSavePreset);
   $('load-preset-btn').onclick = withLoadingState($('load-preset-btn'), 'Loading…', handleLoadPreset);
   $('upload-questions-btn').onclick = withLoadingState($('upload-questions-btn'), 'Uploading…', handleUploadQuestions);
+  $('api-base').value = state.apiBase;
   setApiBase($('api-base').value);
   setupSocket();
 }

@@ -7,92 +7,74 @@ const socketService = require('../services/socketService');
 // 结构: { bonusRoundId: { sessionId, questionId, winnerId, startTime } }
 const activeBonusRounds = {};
 
+// ---------- 内部共享逻辑：启动一个 bonus round ----------
+// 供 REST 路由（下方 startBonusRound）与 socketService 的定时自动触发共用。
+function startBonusRoundLogic(sessionId) {
+    if (!sessionId) {
+        return { code: 1001, data: null, msg: 'Missing required field: sessionId' };
+    }
+
+    const db = readDB();
+    const session = db.sessions[sessionId];
+
+    if (!session) {
+        return { code: 2003, data: null, msg: 'Session not found' };
+    }
+
+    if (session.gameStatus !== 'InProgress') {
+        return { code: 2008, data: null, msg: 'Game is not in progress' };
+    }
+
+    const existing = Object.values(activeBonusRounds).find(r => r.sessionId === sessionId);
+    if (existing) {
+        return { code: 2015, data: null, msg: 'A bonus round is already active for this session' };
+    }
+
+    const usedIds = session.usedQuestionIds || [];
+    const availableQuestions = db.questions.filter(q => !usedIds.includes(q.questionId));
+
+    if (availableQuestions.length === 0) {
+        return { code: 2005, data: null, msg: 'No unused questions remain' };
+    }
+
+    const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+    const selected = availableQuestions[randomIndex];
+
+    session.usedQuestionIds.push(selected.questionId);
+    writeDB(db);
+
+    const bonusRoundId = 'br_' + generateId();
+    activeBonusRounds[bonusRoundId] = {
+        sessionId: sessionId,
+        questionId: selected.questionId,
+        winnerId: null,
+        startTime: Date.now()
+    };
+
+    return {
+        code: 0,
+        data: {
+            bonusRoundId: bonusRoundId,
+            questionId: selected.questionId,
+            questionText: selected.questionText,
+            options: selected.options
+        },
+        msg: 'Bonus round started'
+    };
+}
+
 // ---------- POST /api/bonus/start ----------
 // 注意：此端点仅供内部调用（Socket/逻辑层触发）
 function startBonusRound(req, res) {
     try {
         const { sessionId } = req.body;
+        const result = startBonusRoundLogic(sessionId);
 
-        // 1. 验证必要字段
-        if (!sessionId) {
-            return res.json({
-                code: 1001,
-                data: null,
-                msg: 'Missing required field: sessionId'
-            });
+        if (result.code === 0) {
+            socketService.broadcastGameEvent(sessionId, 'bonus_round_started', result.data);
         }
 
-        // 2. 读取数据库
-        const db = readDB();
-        const session = db.sessions[sessionId];
-
-        if (!session) {
-            return res.json({
-                code: 2003,
-                data: null,
-                msg: 'Session not found'
-            });
-        }
-
-        // 3. 检查游戏状态
-        if (session.gameStatus !== 'InProgress') {
-            return res.json({
-                code: 2008,
-                data: null,
-                msg: 'Game is not in progress'
-            });
-        }
-
-        // 4. 检查是否已有活跃的 bonus round
-        const existing = Object.values(activeBonusRounds).find(r => r.sessionId === sessionId);
-        if (existing) {
-            return res.json({
-                code: 2015,
-                data: null,
-                msg: 'A bonus round is already active for this session'
-            });
-        }
-
-        // 5. 取一道未使用的题目
-        const usedIds = session.usedQuestionIds || [];
-        const availableQuestions = db.questions.filter(q => !usedIds.includes(q.questionId));
-
-        if (availableQuestions.length === 0) {
-            return res.json({
-                code: 2005,
-                data: null,
-                msg: 'No unused questions remain'
-            });
-        }
-
-        const randomIndex = Math.floor(Math.random() * availableQuestions.length);
-        const selected = availableQuestions[randomIndex];
-
-        // 6. 标记为已用
-        session.usedQuestionIds.push(selected.questionId);
-        writeDB(db);
-
-        // 7. 创建 bonus round
-        const bonusRoundId = 'br_' + generateId();
-        activeBonusRounds[bonusRoundId] = {
-            sessionId: sessionId,
-            questionId: selected.questionId,
-            winnerId: null,
-            startTime: Date.now()
-        };
-
-        // 8. 返回响应（Socket 层会广播给所有玩家）
-        return res.json({
-            code: 0,
-            data: {
-                bonusRoundId: bonusRoundId,
-                questionId: selected.questionId,
-                questionText: selected.questionText,
-                options: selected.options
-            },
-            msg: 'Bonus round started'
-        });
-
+        return res.json(result);
     } catch (error) {
         console.error('[Start Bonus Error]', error);
         return res.json({
@@ -268,6 +250,7 @@ function submitBonusAnswer(req, res) {
 
         // ========== 触发 Socket 广播 ==========
         socketService.broadcastBonusResult(sessionId, {
+            bonusRoundId: bonusRoundId,
             winnerPlayerId: playerId,
             winnerUsername: player.username,
             bonusType: reward.type,
@@ -276,6 +259,9 @@ function submitBonusAnswer(req, res) {
             gameStatus: session.gameStatus,
             winnerId: session.winnerId
         });
+        if (gameStatus === 'Completed') {
+            socketService.stopSessionTimers(sessionId);
+        }
 
 
         // 14. 返回结果
@@ -316,6 +302,7 @@ function getActiveBonusRound(sessionId) {
 
 module.exports = {
     startBonusRound,
+    startBonusRoundLogic,
     submitBonusAnswer,
     expireBonusRound,
     getActiveBonusRound,

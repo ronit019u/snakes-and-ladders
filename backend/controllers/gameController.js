@@ -1,6 +1,7 @@
 // controllers/gameController.js
 const { readDB, writeDB, generateId } = require('../services/dbService');
 const gameLogic = require('../services/gameLogic');
+const socketService = require('../services/socketService');
 
 // 颜色池（25种，来自 SRS 9.3）
 const COLOR_PALETTE = [
@@ -15,6 +16,19 @@ const COLOR_PALETTE = [
 function getNextColor(players) {
     const usedColors = players.map(p => p.tokenColor);
     return COLOR_PALETTE.find(c => !usedColors.includes(c)) || '#888888';
+}
+
+// 生成对外广播用的玩家列表（按当前位置排序，供排行榜使用）
+function getPublicPlayerList(session) {
+    return [...session.players]
+        .sort((a, b) => b.currentTile - a.currentTile)
+        .map(p => ({
+            playerId: p.playerId,
+            username: p.username,
+            currentTile: p.currentTile,
+            tokenColor: p.tokenColor,
+            turnStatus: p.turnStatus
+        }));
 }
 
 // ---------- 通用：保存 session 并返回响应 ----------
@@ -145,6 +159,11 @@ function join(req, res) {
             player.turnStatus = 'active';
             writeDB(db);
 
+            socketService.broadcastGameEvent(sessionId, 'player_reconnected', {
+                playerId,
+                activePlayers: getPublicPlayerList(session)
+            });
+
             // 1.4 准备响应数据
             const responseData = {
                 sessionId: sessionId,
@@ -221,6 +240,11 @@ function join(req, res) {
 
         session.players.push(newPlayer);
         writeDB(db);
+
+        socketService.broadcastGameEvent(sessionId, 'player_joined', {
+            playerId: newPlayerId,
+            activePlayers: getPublicPlayerList(session)
+        });
 
         // 2.7 准备响应数据
         const responseData = {
@@ -353,6 +377,13 @@ function start(req, res) {
         session.startedAt = new Date().toISOString();
         writeDB(db);
 
+        socketService.broadcastGameEvent(sessionId, 'game_started', {
+            sessionId,
+            gameStatus: 'InProgress',
+            startedAt: session.startedAt
+        });
+        socketService.startSessionTimers(sessionId);
+
         // 7. 返回响应
         return res.json({
             code: 0,
@@ -447,6 +478,19 @@ function move(req, res) {
             // 7. 写库
             writeDB(db);
 
+            socketService.broadcastGameEvent(sessionId, 'move_update', {
+                playerId,
+                currentTile: targetTile,
+                activePlayers: getPublicPlayerList(session)
+            });
+            if (gameStatus === 'Completed') {
+                socketService.broadcastGameEvent(sessionId, 'game_over', {
+                    winnerId,
+                    activePlayers: getPublicPlayerList(session)
+                });
+                socketService.stopSessionTimers(sessionId);
+            }
+
             // 8. 返回响应
             return res.json({
                 code: 0,
@@ -495,6 +539,11 @@ function move(req, res) {
             session.winnerId = playerId;
             session.completedAt = new Date().toISOString();
             writeDB(db);
+            socketService.broadcastGameEvent(sessionId, 'game_over', {
+                winnerId: playerId,
+                activePlayers: getPublicPlayerList(session)
+            });
+            socketService.stopSessionTimers(sessionId);
             return res.json({
                 code: 0,
                 data: {
@@ -513,6 +562,12 @@ function move(req, res) {
         if (tileType === 'ladder' || tileType === 'snake') {
             // 写入数据库（位置已更新到蛇/梯起点）
             writeDB(db);
+
+            socketService.broadcastGameEvent(sessionId, 'move_update', {
+                playerId,
+                currentTile: landingTile,
+                activePlayers: getPublicPlayerList(session)
+            });
 
             return res.json({
                 code: 0,
@@ -546,6 +601,11 @@ function move(req, res) {
                 finalTile = Math.max(1, landingTile - effect.steps);
                 player.currentTile = finalTile;
                 writeDB(db);
+                socketService.broadcastGameEvent(sessionId, 'move_update', {
+                    playerId,
+                    currentTile: finalTile,
+                    activePlayers: getPublicPlayerList(session)
+                });
                 return res.json({
                     code: 0,
                     data: {
@@ -564,6 +624,12 @@ function move(req, res) {
 
         // 10. 写库
         writeDB(db);
+
+        socketService.broadcastGameEvent(sessionId, 'move_update', {
+            playerId,
+            currentTile: landingTile,
+            activePlayers: getPublicPlayerList(session)
+        });
 
         // 11. 返回响应
         return res.json({
@@ -721,6 +787,20 @@ function useItem(req, res) {
         // 12. 写库
         writeDB(db);
 
+        socketService.broadcastGameEvent(sessionId, 'item_used', {
+            itemType,
+            sourcePlayerId: playerId,
+            targetPlayerId: targetPlayerId || null,
+            activePlayers: getPublicPlayerList(session)
+        });
+        if (gameStatus === 'Completed') {
+            socketService.broadcastGameEvent(sessionId, 'game_over', {
+                winnerId,
+                activePlayers: getPublicPlayerList(session)
+            });
+            socketService.stopSessionTimers(sessionId);
+        }
+
         // 13. 构造响应
         let responseData = {
             effect: itemType === 'rocket' ? 'self_forward' : 'target_backward',
@@ -808,6 +888,11 @@ function disconnect(req, res) {
         // 5. 标记为 inactive
         player.turnStatus = 'inactive';
         writeDB(db);
+
+        socketService.broadcastGameEvent(sessionId, 'player_disconnected', {
+            playerId,
+            activePlayers: getPublicPlayerList(session)
+        });
 
         // 6. 返回响应
         return res.json({

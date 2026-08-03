@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const path = require('path');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -42,6 +43,15 @@ app.use(fileUpload({
     abortOnLimit: true
 }));
 
+// ---------- 静态资源（前端页面）----------
+// Serves frontend/ directly from this same server, so admin.html and
+// player.html are same-origin with the API — no CORS, no cookie
+// sameSite issues, no separate dev server needed. Just run
+// `node server.js` and open http://localhost:5000/admin.html (or
+// /player.html) directly. No Live Server, no cache-busting reloads
+// from watching db.json - this isn't a file-watching dev server.
+app.use(express.static(path.join(__dirname, '../frontend')));
+
 // ---------- 路由 ----------
 app.use('/api/game', gameRoutes);
 app.use('/api/question', questionRoutes);
@@ -60,13 +70,7 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 // ---------- Socket.io ----------
-io.on('connection', (socket) => {
-  console.log('A client connected:', socket.id);
-  socket.on('disconnect', () => {
-    console.log('A client disconnected:', socket.id);
-  });
-});
-
+// All connection/event handling lives in services/socketService.js.
 socketService.initSocket(io);
 
 // ---------- 启动 ----------

@@ -1,31 +1,48 @@
 {
   "sessions": {
-    "msalg8yl8z367q": {
-      "sessionId": "msalg8yl8z367q",
-      "ownerId": "admin_msalg8yl0dw3ie",
+    "msc1futblk7rbn": {
+      "sessionId": "msc1futblk7rbn",
+      "ownerId": "admin_msc1futb8uhtgf",
       "gameStatus": "InProgress",
-      "createdAt": "2026-08-01T16:36:47.325Z",
-      "startedAt": "2026-08-01T16:36:59.176Z",
+      "createdAt": "2026-08-02T16:52:09.024Z",
+      "startedAt": "2026-08-02T16:54:35.949Z",
+      "completedAt": null,
       "winnerId": null,
       "maxPlayers": 25,
       "usedQuestionIds": [
-        "Q014"
+        "Q006"
       ],
       "players": [
         {
-          "playerId": "pmsalgbhdpc1s9x",
-          "username": "a",
-          "currentTile": 0,
+          "playerId": "pmsc1iacgnqn2av",
+          "username": "angel",
+          "currentTile": 1,
           "tokenColor": "#FF0000",
-          "turnStatus": "active",
+          "turnStatus": "inactive",
           "inventory": []
         },
         {
-          "playerId": "pmsalggfbuwevj4",
-          "username": "b",
-          "currentTile": 51,
+          "playerId": "pmsc1igaf0y0r8f",
+          "username": "aqilah",
+          "currentTile": 1,
           "tokenColor": "#00FF00",
-          "turnStatus": "active",
+          "turnStatus": "inactive",
+          "inventory": []
+        },
+        {
+          "playerId": "pmsc1ilytsevefu",
+          "username": "renoj",
+          "currentTile": 40,
+          "tokenColor": "#0000FF",
+          "turnStatus": "inactive",
+          "inventory": []
+        },
+        {
+          "playerId": "pmsc1iti1yzc7up",
+          "username": "nathan",
+          "currentTile": 20,
+          "tokenColor": "#FFFF00",
+          "turnStatus": "inactive",
           "inventory": []
         }
       ],
@@ -68,11 +85,11 @@
         }
       }
     },
-    "msaoqf9l7hrj0w": {
-      "sessionId": "msaoqf9l7hrj0w",
-      "ownerId": "pmsaoqf9mk6ybas",
+    "msc1hctxqva4pz": {
+      "sessionId": "msc1hctxqva4pz",
+      "ownerId": "pmsc1hctx5oznz1",
       "gameStatus": "waiting",
-      "createdAt": "2026-08-01T18:08:40.907Z",
+      "createdAt": "2026-08-02T16:53:19.030Z",
       "startedAt": null,
       "completedAt": null,
       "winnerId": null,
@@ -80,366 +97,103 @@
       "usedQuestionIds": [],
       "players": [
         {
-          "playerId": "pmsaoqf9mk6ybas",
-          "username": "a",
+          "playerId": "pmsc1hctx5oznz1",
+          "username": "angel",
           "currentTile": 0,
           "tokenColor": "#FF0000",
-          "turnStatus": "active",
-          "inventory": []
-        },
-        {
-          "playerId": "pmsaoqiekxz35ha",
-          "username": "b",
-          "currentTile": 0,
-          "tokenColor": "#00FF00",
-          "turnStatus": "active",
+          "turnStatus": "inactive",
           "inventory": []
         }
       ]
     },
-    "msaotld1mr6kea": {
-      "sessionId": "msaotld1mr6kea",
-      "ownerId": "admin_msaotld1dc6s46",
-      "gameStatus": "InProgress",
-      "createdAt": "2026-08-01T18:11:08.773Z",
-      "startedAt": "2026-08-01T18:11:20.757Z",
-      "completedAt": null,
-      "winnerId": null,
-      "maxPlayers": 25,
-      "usedQuestionIds": [
-        "Q011"
-      ],
-      "players": [
-        {
-          "playerId": "pmsaotoibvjexox",
-          "username": "1",
-          "currentTile": 0,
-          "tokenColor": "#FF0000",
-          "turnStatus": "active",
-          "inventory": []
-        },
-        {
-          "playerId": "pmsaots39way9sh",
-          "username": "2",
-          "currentTile": 16,
-          "tokenColor": "#00FF00",
-          "turnStatus": "active",
-          "inventory": []
-        }
-      ],
-      "presets": {
-        "presetId": "default",
-        "displayName": "Default",
-        "flashingTile": {
-          "blueProb": 0.3,
-          "redProb": 0.3,
-          "blueEffect": {
-            "type": "item",
-            "itemTypes": [
-              "rocket",
-              "bomb"
-            ],
-            "itemProb": 0.5
-          },
-          "redEffect": {
-            "type": "penalty",
-            "penaltySteps": 2
-          }
-        },
-        "earthquake": {
-          "magnitude": 3,
-          "interval": 60
-        },
-        "bonus": {
-          "interval": 180,
-          "forwardSteps": 5
-        },
-        "items": {
-          "rocket": {
-            "enabled": true,
-            "steps": 3
-          },
-          "bomb": {
-            "enabled": true,
-            "steps": 3
-          }
-        }
-      }
-    },
-    "msap0efd5dmojq": {
-      "sessionId": "msap0efd5dmojq",
-      "ownerId": "admin_msap0efdbhj0yx",
-      "gameStatus": "InProgress",
-      "createdAt": "2026-08-01T18:16:26.377Z",
-      "startedAt": "2026-08-01T18:16:35.186Z",
-      "completedAt": null,
-      "winnerId": null,
-      "maxPlayers": 25,
-      "usedQuestionIds": [
-        "Q015"
-      ],
-      "players": [
-        {
-          "playerId": "pmsap0gzo9jcrbx",
-          "username": "a",
-          "currentTile": 0,
-          "tokenColor": "#FF0000",
-          "turnStatus": "active",
-          "inventory": []
-        },
-        {
-          "playerId": "pmsap0kgraxybbs",
-          "username": "b",
-          "currentTile": 6,
-          "tokenColor": "#00FF00",
-          "turnStatus": "active",
-          "inventory": []
-        }
-      ],
-      "presets": {
-        "presetId": "default",
-        "displayName": "Default",
-        "flashingTile": {
-          "blueProb": 0.3,
-          "redProb": 0.3,
-          "blueEffect": {
-            "type": "item",
-            "itemTypes": [
-              "rocket",
-              "bomb"
-            ],
-            "itemProb": 0.5
-          },
-          "redEffect": {
-            "type": "penalty",
-            "penaltySteps": 2
-          }
-        },
-        "earthquake": {
-          "magnitude": 3,
-          "interval": 60
-        },
-        "bonus": {
-          "interval": 180,
-          "forwardSteps": 5
-        },
-        "items": {
-          "rocket": {
-            "enabled": true,
-            "steps": 3
-          },
-          "bomb": {
-            "enabled": true,
-            "steps": 3
-          }
-        }
-      }
-    },
-    "msap29cski2fng": {
-      "sessionId": "msap29cski2fng",
-      "ownerId": "admin_msap29cs8108iq",
-      "gameStatus": "Completed",
-      "createdAt": "2026-08-01T18:17:53.116Z",
-      "startedAt": "2026-08-01T18:18:02.947Z",
-      "completedAt": "2026-08-01T18:20:19.351Z",
-      "winnerId": "pmsap2g55j53uqh",
-      "maxPlayers": 25,
-      "usedQuestionIds": [
-        "Q015",
-        "Q016",
-        "Q022",
-        "Q013",
-        "Q014",
-        "Q011"
-      ],
-      "players": [
-        {
-          "playerId": "pmsap2djck4jtxe",
-          "username": "1",
-          "currentTile": 1,
-          "tokenColor": "#FF0000",
-          "turnStatus": "active",
-          "inventory": []
-        },
-        {
-          "playerId": "pmsap2g55j53uqh",
-          "username": "2",
-          "currentTile": 100,
-          "tokenColor": "#00FF00",
-          "turnStatus": "active",
-          "inventory": []
-        }
-      ],
-      "presets": {
-        "presetId": "default",
-        "displayName": "Default",
-        "flashingTile": {
-          "blueProb": 0.3,
-          "redProb": 0.3,
-          "blueEffect": {
-            "type": "item",
-            "itemTypes": [
-              "rocket",
-              "bomb"
-            ],
-            "itemProb": 0.5
-          },
-          "redEffect": {
-            "type": "penalty",
-            "penaltySteps": 2
-          }
-        },
-        "earthquake": {
-          "magnitude": 3,
-          "interval": 60
-        },
-        "bonus": {
-          "interval": 180,
-          "forwardSteps": 5
-        },
-        "items": {
-          "rocket": {
-            "enabled": true,
-            "steps": 3
-          },
-          "bomb": {
-            "enabled": true,
-            "steps": 3
-          }
-        }
-      }
-    },
-    "msaq3683cpm3vi": {
-      "sessionId": "msaq3683cpm3vi",
-      "ownerId": "pmsaq368396g7b9",
-      "gameStatus": "Completed",
-      "createdAt": "2026-08-01T18:46:35.334Z",
-      "startedAt": "2026-08-01T18:46:49.594Z",
-      "completedAt": "2026-08-01T18:50:34.147Z",
-      "winnerId": "pmsaq3ads1ujk32",
-      "maxPlayers": 25,
-      "usedQuestionIds": [
-        "Q022",
-        "Q015",
-        "Q011",
-        "Q008",
-        "Q023",
-        "Q014",
-        "Q024",
-        "Q025",
-        "Q010",
-        "Q007",
-        "Q020",
-        "Q018",
-        "Q017",
-        "Q006",
-        "Q009",
-        "Q012",
-        "Q019",
-        "Q013",
-        "Q021",
-        "Q016"
-      ],
-      "players": [
-        {
-          "playerId": "pmsaq368396g7b9",
-          "username": "a",
-          "currentTile": 96,
-          "tokenColor": "#FF0000",
-          "turnStatus": "active",
-          "inventory": []
-        },
-        {
-          "playerId": "pmsaq3ads1ujk32",
-          "username": "b",
-          "currentTile": 100,
-          "tokenColor": "#00FF00",
-          "turnStatus": "active",
-          "inventory": []
-        }
-      ]
-    },
-    "msaq9nyjxp07oy": {
-      "sessionId": "msaq9nyjxp07oy",
-      "ownerId": "admin_msaq9nyjvez7mn",
-      "gameStatus": "Completed",
-      "createdAt": "2026-08-01T18:51:38.251Z",
-      "startedAt": "2026-08-01T18:51:52.643Z",
-      "completedAt": "2026-08-01T18:53:37.019Z",
-      "winnerId": "pmsaq9vmlu9t02a",
-      "maxPlayers": 25,
-      "usedQuestionIds": [
-        "Q009",
-        "Q014",
-        "Q017",
-        "Q007",
-        "Q006",
-        "Q020",
-        "Q021",
-        "Q019"
-      ],
-      "players": [
-        {
-          "playerId": "pmsaq9r38ck99rd",
-          "username": "a",
-          "currentTile": 0,
-          "tokenColor": "#FF0000",
-          "turnStatus": "active",
-          "inventory": []
-        },
-        {
-          "playerId": "pmsaq9vmlu9t02a",
-          "username": "b",
-          "currentTile": 100,
-          "tokenColor": "#00FF00",
-          "turnStatus": "active",
-          "inventory": []
-        }
-      ],
-      "presets": {
-        "presetId": "default",
-        "displayName": "Default",
-        "flashingTile": {
-          "blueProb": 0.3,
-          "redProb": 0.3,
-          "blueEffect": {
-            "type": "item",
-            "itemTypes": [
-              "rocket",
-              "bomb"
-            ],
-            "itemProb": 0.5
-          },
-          "redEffect": {
-            "type": "penalty",
-            "penaltySteps": 2
-          }
-        },
-        "earthquake": {
-          "magnitude": 3,
-          "interval": 60
-        },
-        "bonus": {
-          "interval": 180,
-          "forwardSteps": 5
-        },
-        "items": {
-          "rocket": {
-            "enabled": true,
-            "steps": 3
-          },
-          "bomb": {
-            "enabled": true,
-            "steps": 3
-          }
-        }
-      }
-    },
-    "msaqdxql2knojc": {
-      "sessionId": "msaqdxql2knojc",
-      "ownerId": "admin_msaqdxqljfxggh",
+    "msc1wcelwb7y0k": {
+      "sessionId": "msc1wcelwb7y0k",
+      "ownerId": "admin_msc1wcelieh4v7",
       "gameStatus": "waiting",
-      "createdAt": "2026-08-01T18:54:57.549Z",
+      "createdAt": "2026-08-02T17:04:58.317Z",
+      "startedAt": null,
+      "completedAt": null,
+      "winnerId": null,
+      "maxPlayers": 25,
+      "usedQuestionIds": [],
+      "players": [
+        {
+          "playerId": "pmsc1xvsxpnowjs",
+          "username": "edacs",
+          "currentTile": 0,
+          "tokenColor": "#FF0000",
+          "turnStatus": "inactive",
+          "inventory": []
+        },
+        {
+          "playerId": "pmsc1y28azlodmd",
+          "username": "fbs",
+          "currentTile": 0,
+          "tokenColor": "#00FF00",
+          "turnStatus": "inactive",
+          "inventory": []
+        },
+        {
+          "playerId": "pmsc1y9sxltfonm",
+          "username": "fds",
+          "currentTile": 0,
+          "tokenColor": "#0000FF",
+          "turnStatus": "inactive",
+          "inventory": []
+        },
+        {
+          "playerId": "pmsc1yhg0cp6yjf",
+          "username": "vfczx",
+          "currentTile": 0,
+          "tokenColor": "#FFFF00",
+          "turnStatus": "inactive",
+          "inventory": []
+        }
+      ],
+      "presets": {
+        "presetId": "default",
+        "displayName": "Default",
+        "flashingTile": {
+          "blueProb": 0.3,
+          "redProb": 0.3,
+          "blueEffect": {
+            "type": "item",
+            "itemTypes": [
+              "rocket",
+              "bomb"
+            ],
+            "itemProb": 0.5
+          },
+          "redEffect": {
+            "type": "penalty",
+            "penaltySteps": 2
+          }
+        },
+        "earthquake": {
+          "magnitude": 3,
+          "interval": 60
+        },
+        "bonus": {
+          "interval": 180,
+          "forwardSteps": 5
+        },
+        "items": {
+          "rocket": {
+            "enabled": true,
+            "steps": 3
+          },
+          "bomb": {
+            "enabled": true,
+            "steps": 3
+          }
+        }
+      }
+    },
+    "msc1ytrvd65j08": {
+      "sessionId": "msc1ytrvd65j08",
+      "ownerId": "admin_msc1ytrw9myktb",
+      "gameStatus": "waiting",
+      "createdAt": "2026-08-02T17:06:54.140Z",
       "startedAt": null,
       "completedAt": null,
       "winnerId": null,
@@ -450,8 +204,8 @@
         "presetId": "default",
         "displayName": "Default",
         "flashingTile": {
-          "blueProb": 0.8,
-          "redProb": 0.2,
+          "blueProb": 0.3,
+          "redProb": 0.3,
           "blueEffect": {
             "type": "item",
             "itemTypes": [
@@ -485,33 +239,147 @@
         }
       }
     },
-    "msaqdyrh7uzqi6": {
-      "sessionId": "msaqdyrh7uzqi6",
-      "ownerId": "admin_msaqdyrh6d1037",
-      "gameStatus": "InProgress",
-      "createdAt": "2026-08-01T18:54:58.877Z",
-      "startedAt": "2026-08-01T18:55:10.772Z",
+    "msc1z2ulfml61j": {
+      "sessionId": "msc1z2ulfml61j",
+      "ownerId": "admin_msc1z2uly9bjqy",
+      "gameStatus": "waiting",
+      "createdAt": "2026-08-02T17:07:05.901Z",
+      "startedAt": null,
       "completedAt": null,
       "winnerId": null,
       "maxPlayers": 25,
-      "usedQuestionIds": [
-        "Q022"
-      ],
+      "usedQuestionIds": [],
+      "players": [],
+      "presets": {
+        "presetId": "default",
+        "displayName": "Default",
+        "flashingTile": {
+          "blueProb": 0.3,
+          "redProb": 0.3,
+          "blueEffect": {
+            "type": "item",
+            "itemTypes": [
+              "rocket",
+              "bomb"
+            ],
+            "itemProb": 0.5
+          },
+          "redEffect": {
+            "type": "penalty",
+            "penaltySteps": 2
+          }
+        },
+        "earthquake": {
+          "magnitude": 3,
+          "interval": 60
+        },
+        "bonus": {
+          "interval": 180,
+          "forwardSteps": 5
+        },
+        "items": {
+          "rocket": {
+            "enabled": true,
+            "steps": 3
+          },
+          "bomb": {
+            "enabled": true,
+            "steps": 3
+          }
+        }
+      }
+    },
+    "msc1zx7d10ci1u": {
+      "sessionId": "msc1zx7d10ci1u",
+      "ownerId": "admin_msc1zx7dc47qcr",
+      "gameStatus": "waiting",
+      "createdAt": "2026-08-02T17:07:45.241Z",
+      "startedAt": null,
+      "completedAt": null,
+      "winnerId": null,
+      "maxPlayers": 25,
+      "usedQuestionIds": [],
+      "players": [],
+      "presets": {
+        "presetId": "default",
+        "displayName": "Default",
+        "flashingTile": {
+          "blueProb": 0.3,
+          "redProb": 0.3,
+          "blueEffect": {
+            "type": "item",
+            "itemTypes": [
+              "rocket",
+              "bomb"
+            ],
+            "itemProb": 0.5
+          },
+          "redEffect": {
+            "type": "penalty",
+            "penaltySteps": 2
+          }
+        },
+        "earthquake": {
+          "magnitude": 3,
+          "interval": 60
+        },
+        "bonus": {
+          "interval": 180,
+          "forwardSteps": 5
+        },
+        "items": {
+          "rocket": {
+            "enabled": true,
+            "steps": 3
+          },
+          "bomb": {
+            "enabled": true,
+            "steps": 3
+          }
+        }
+      }
+    },
+    "msc20fzl5n6fab": {
+      "sessionId": "msc20fzl5n6fab",
+      "ownerId": "admin_msc20fzl5bi16z",
+      "gameStatus": "InProgress",
+      "createdAt": "2026-08-02T17:08:09.585Z",
+      "startedAt": "2026-08-02T17:09:05.744Z",
+      "completedAt": null,
+      "winnerId": null,
+      "maxPlayers": 25,
+      "usedQuestionIds": [],
       "players": [
         {
-          "playerId": "pmsaqe38zbegvni",
-          "username": "b",
-          "currentTile": 12,
+          "playerId": "pmsc20mvc3lhgor",
+          "username": "frd",
+          "currentTile": 0,
           "tokenColor": "#FF0000",
-          "turnStatus": "active",
+          "turnStatus": "inactive",
           "inventory": []
         },
         {
-          "playerId": "pmsaqe6rkz5daj3",
-          "username": "a",
-          "currentTile": 28,
+          "playerId": "pmsc21b0tnmw3ad",
+          "username": "gfd",
+          "currentTile": 0,
           "tokenColor": "#00FF00",
-          "turnStatus": "active",
+          "turnStatus": "inactive",
+          "inventory": []
+        },
+        {
+          "playerId": "pmsc21fq384qazz",
+          "username": "dsx",
+          "currentTile": 0,
+          "tokenColor": "#0000FF",
+          "turnStatus": "inactive",
+          "inventory": []
+        },
+        {
+          "playerId": "pmsc21k0tw4s871",
+          "username": "vsdzc",
+          "currentTile": 12,
+          "tokenColor": "#FFFF00",
+          "turnStatus": "inactive",
           "inventory": []
         }
       ],
@@ -519,8 +387,8 @@
         "presetId": "default",
         "displayName": "Default",
         "flashingTile": {
-          "blueProb": 0.8,
-          "redProb": 0.2,
+          "blueProb": 0.3,
+          "redProb": 0.3,
           "blueEffect": {
             "type": "item",
             "itemTypes": [
@@ -553,486 +421,118 @@
           }
         }
       }
-    },
-    "msaqfwm5khe8ql": {
-      "sessionId": "msaqfwm5khe8ql",
-      "ownerId": "pmsaqfwm54v683x",
-      "gameStatus": "InProgress",
-      "createdAt": "2026-08-01T18:56:29.409Z",
-      "startedAt": "2026-08-01T18:56:35.102Z",
-      "completedAt": null,
-      "winnerId": null,
-      "maxPlayers": 25,
-      "usedQuestionIds": [],
-      "players": [
-        {
-          "playerId": "pmsaqfwm54v683x",
-          "username": "a",
-          "currentTile": 45,
-          "tokenColor": "#FF0000",
-          "turnStatus": "active",
-          "inventory": []
-        },
-        {
-          "playerId": "pmsaqg03ao8i4zk",
-          "username": "b",
-          "currentTile": 28,
-          "tokenColor": "#00FF00",
-          "turnStatus": "active",
-          "inventory": []
-        }
-      ]
-    },
-    "msaqts7a4043sw": {
-      "sessionId": "msaqts7a4043sw",
-      "ownerId": "pmsaqts7aizrv3o",
-      "gameStatus": "InProgress",
-      "createdAt": "2026-08-01T19:07:16.870Z",
-      "startedAt": "2026-08-01T19:07:31.246Z",
-      "completedAt": null,
-      "winnerId": null,
-      "maxPlayers": 25,
-      "usedQuestionIds": [
-        "Q009",
-        "Q022",
-        "Q013",
-        "Q015",
-        "Q017",
-        "Q021",
-        "Q006"
-      ],
-      "players": [
-        {
-          "playerId": "pmsaqts7aizrv3o",
-          "username": "a",
-          "currentTile": 95,
-          "tokenColor": "#FF0000",
-          "turnStatus": "active",
-          "inventory": []
-        },
-        {
-          "playerId": "pmsaqu14pooxo0u",
-          "username": "b",
-          "currentTile": 72,
-          "tokenColor": "#00FF00",
-          "turnStatus": "active",
-          "inventory": []
-        }
-      ]
-    },
-    "msar07q8806f1o": {
-      "sessionId": "msar07q8806f1o",
-      "ownerId": "pmsar07q84s8ugl",
-      "gameStatus": "InProgress",
-      "createdAt": "2026-08-01T19:12:16.928Z",
-      "startedAt": "2026-08-01T19:12:25.108Z",
-      "completedAt": null,
-      "winnerId": null,
-      "maxPlayers": 25,
-      "usedQuestionIds": [
-        "Q024",
-        "Q023",
-        "Q014",
-        "Q022",
-        "Q011",
-        "Q012",
-        "Q006",
-        "Q018",
-        "Q013",
-        "Q016",
-        "Q015",
-        "Q008",
-        "Q009"
-      ],
-      "players": [
-        {
-          "playerId": "pmsar07q84s8ugl",
-          "username": "a",
-          "currentTile": 99,
-          "tokenColor": "#FF0000",
-          "turnStatus": "active",
-          "inventory": []
-        },
-        {
-          "playerId": "pmsar0b01eqxy6l",
-          "username": "b",
-          "currentTile": 99,
-          "tokenColor": "#00FF00",
-          "turnStatus": "active",
-          "inventory": []
-        }
-      ]
-    },
-    "msar26awn0efiw": {
-      "sessionId": "msar26awn0efiw",
-      "ownerId": "pmsar26awv37u4v",
-      "gameStatus": "Completed",
-      "createdAt": "2026-08-01T19:13:48.393Z",
-      "startedAt": "2026-08-01T19:13:51.820Z",
-      "completedAt": "2026-08-01T19:15:02.046Z",
-      "winnerId": "pmsar280fz4vv0v",
-      "maxPlayers": 25,
-      "usedQuestionIds": [
-        "Q016",
-        "Q021",
-        "Q023",
-        "Q020",
-        "Q014",
-        "Q007",
-        "Q024",
-        "Q009",
-        "Q019",
-        "Q010",
-        "Q006",
-        "Q012",
-        "Q022",
-        "Q018"
-      ],
-      "players": [
-        {
-          "playerId": "pmsar26awv37u4v",
-          "username": "a",
-          "currentTile": 23,
-          "tokenColor": "#FF0000",
-          "turnStatus": "active",
-          "inventory": []
-        },
-        {
-          "playerId": "pmsar280fz4vv0v",
-          "username": "b",
-          "currentTile": 100,
-          "tokenColor": "#00FF00",
-          "turnStatus": "active",
-          "inventory": []
-        }
-      ]
     }
   },
   "questions": [
     {
-      "questionId": "Q011",
-      "questionText": "What is 2+2?",
+      "questionId": "Q001",
+      "questionText": "What does HTTP stand for?",
       "options": [
-        "3",
-        "4",
-        "5",
-        "6"
+        "Hyper Text Transfer Protocol",
+        "High Tech Transfer Protocol",
+        "Hyper Transfer Text Protocol",
+        "None of the above"
       ],
-      "correctAnswer": "B",
-      "difficulty": "Easy",
-      "topic": "Math"
+      "correctAnswer": "A"
     },
     {
-      "questionId": "Q012",
-      "questionText": "What is the capital of France?",
+      "questionId": "Q002",
+      "questionText": "What is the default port for HTTPS?",
       "options": [
-        "London",
-        "Paris",
-        "Berlin",
-        "Madrid"
+        "80",
+        "443",
+        "8080",
+        "22"
       ],
-      "correctAnswer": "B",
-      "difficulty": "Easy",
-      "topic": "Geography"
+      "correctAnswer": "B"
     },
     {
-      "questionId": "Q013",
-      "questionText": "Which planet is known as the Red Planet?",
+      "questionId": "Q003",
+      "questionText": "Which of these is a NoSQL database?",
       "options": [
-        "Venus",
-        "Mars",
-        "Jupiter",
-        "Saturn"
+        "MySQL",
+        "PostgreSQL",
+        "MongoDB",
+        "Oracle"
       ],
-      "correctAnswer": "B",
-      "difficulty": "Medium",
-      "topic": "Science"
+      "correctAnswer": "C"
     },
     {
-      "questionId": "Q014",
-      "questionText": "What is the chemical symbol for water?",
+      "questionId": "Q004",
+      "questionText": "What does CSS stand for?",
       "options": [
-        "H2O",
-        "CO2",
-        "NaCl",
-        "HCl"
+        "Cascading Style Sheets",
+        "Creative Style Sheets",
+        "Computer Style Sheets",
+        "Colorful Style Sheets"
       ],
-      "correctAnswer": "A",
-      "difficulty": "Easy",
-      "topic": "Chemistry"
+      "correctAnswer": "A"
     },
     {
-      "questionId": "Q015",
-      "questionText": "Who developed the theory of relativity?",
+      "questionId": "Q005",
+      "questionText": "Which HTML tag is used to create a hyperlink?",
       "options": [
-        "Newton",
-        "Einstein",
-        "Hawking",
-        "Galileo"
+        "<link>",
+        "<a>",
+        "<href>",
+        "<url>"
       ],
-      "correctAnswer": "B",
-      "difficulty": "Hard",
-      "topic": "Physics"
+      "correctAnswer": "B"
     },
     {
       "questionId": "Q006",
-      "questionText": "What is the primary purpose of a firewall?",
+      "questionText": "What is the correct way to declare a variable in JavaScript?",
       "options": [
-        "To protect against viruses",
-        "To filter network traffic",
-        "To encrypt data",
-        "To manage user passwords"
+        "var x = 5;",
+        "variable x = 5;",
+        "v x = 5;",
+        "let x: 5;"
       ],
-      "correctAnswer": "B",
-      "difficulty": "Easy",
-      "topic": "Network Security"
+      "correctAnswer": "A"
     },
     {
       "questionId": "Q007",
-      "questionText": "Which encryption algorithm is commonly used for secure web browsing?",
+      "questionText": "Which protocol is used to send email?",
       "options": [
-        "RSA",
-        "AES",
-        "SSL/TLS",
-        "DES"
+        "HTTP",
+        "FTP",
+        "SMTP",
+        "SSH"
       ],
-      "correctAnswer": "C",
-      "difficulty": "Medium",
-      "topic": "Cryptography"
+      "correctAnswer": "C"
     },
     {
       "questionId": "Q008",
-      "questionText": "What is a common type of phishing attack?",
+      "questionText": "What is the file extension for a Java source file?",
       "options": [
-        "Malware infection",
-        "DNS spoofing",
-        "Email impersonation",
-        "Session hijacking"
+        ".java",
+        ".class",
+        ".jav",
+        ".js"
       ],
-      "correctAnswer": "C",
-      "difficulty": "Medium",
-      "topic": "Application Security"
+      "correctAnswer": "A"
     },
     {
       "questionId": "Q009",
-      "questionText": "Which of the following is a secure password practice?",
+      "questionText": "What is the output of 2 + \"2\" in JavaScript?",
       "options": [
-        "Using the same password everywhere",
-        "Writing passwords on sticky notes",
-        "Using a password manager",
-        "Sharing passwords with colleagues"
+        "4",
+        "\"4\"",
+        "\"22\"",
+        "Error"
       ],
-      "correctAnswer": "C",
-      "difficulty": "Easy",
-      "topic": "Access Control"
+      "correctAnswer": "C"
     },
     {
       "questionId": "Q010",
-      "questionText": "What does TLS stand for?",
+      "questionText": "Which company developed Node.js?",
       "options": [
-        "Transport Layer Security",
-        "Transmission Link System",
-        "Trusted Login Service",
-        "Transfer Layer Socket"
+        "Google",
+        "Facebook",
+        "Microsoft",
+        "Joyent"
       ],
-      "correctAnswer": "A",
-      "difficulty": "Medium",
-      "topic": "Network Security"
-    },
-    {
-      "questionId": "Q011",
-      "questionText": "What is a common method to prevent SQL injection?",
-      "options": [
-        "Using stored procedures",
-        "Input validation and parameterized queries",
-        "Disabling SQL",
-        "Encrypting database"
-      ],
-      "correctAnswer": "B",
-      "difficulty": "Hard",
-      "topic": "Application Security"
-    },
-    {
-      "questionId": "Q012",
-      "questionText": "Which of the following is a type of malware that replicates itself?",
-      "options": [
-        "Trojan",
-        "Worm",
-        "Spyware",
-        "Adware"
-      ],
-      "correctAnswer": "B",
-      "difficulty": "Medium",
-      "topic": "Endpoint Security"
-    },
-    {
-      "questionId": "Q013",
-      "questionText": "What is the purpose of a VPN?",
-      "options": [
-        "To speed up internet",
-        "To encrypt network traffic",
-        "To block ads",
-        "To manage passwords"
-      ],
-      "correctAnswer": "B",
-      "difficulty": "Easy",
-      "topic": "Network Security"
-    },
-    {
-      "questionId": "Q014",
-      "questionText": "Which of the following is a secure file transfer protocol?",
-      "options": [
-        "FTP",
-        "HTTP",
-        "SFTP",
-        "Telnet"
-      ],
-      "correctAnswer": "C",
-      "difficulty": "Medium",
-      "topic": "Network Security"
-    },
-    {
-      "questionId": "Q015",
-      "questionText": "What is a common sign of a DDoS attack?",
-      "options": [
-        "Slow network performance",
-        "Unexpected pop-ups",
-        "Unauthorized data changes",
-        "Password reset requests"
-      ],
-      "correctAnswer": "A",
-      "difficulty": "Hard",
-      "topic": "Network Security"
-    },
-    {
-      "questionId": "Q016",
-      "questionText": "What is the most common method of authentication?",
-      "options": [
-        "Password",
-        "Biometric",
-        "Smart card",
-        "Security token"
-      ],
-      "correctAnswer": "A",
-      "difficulty": "Easy",
-      "topic": "Access Control"
-    },
-    {
-      "questionId": "Q017",
-      "questionText": "Which of the following is a best practice for mobile device security?",
-      "options": [
-        "Installing apps from unknown sources",
-        "Using a screen lock",
-        "Disabling automatic updates",
-        "Sharing your device with others"
-      ],
-      "correctAnswer": "B",
-      "difficulty": "Easy",
-      "topic": "Endpoint Security"
-    },
-    {
-      "questionId": "Q018",
-      "questionText": "What is the primary goal of a honeypot in cybersecurity?",
-      "options": [
-        "To catch attackers",
-        "To store backup data",
-        "To encrypt files",
-        "To block malware"
-      ],
-      "correctAnswer": "A",
-      "difficulty": "Hard",
-      "topic": "Security Operations"
-    },
-    {
-      "questionId": "Q019",
-      "questionText": "What is the difference between symmetric and asymmetric encryption?",
-      "options": [
-        "Speed",
-        "Key usage",
-        "Complexity",
-        "All of the above"
-      ],
-      "correctAnswer": "B",
-      "difficulty": "Medium",
-      "topic": "Cryptography"
-    },
-    {
-      "questionId": "Q020",
-      "questionText": "Which of the following is a social engineering tactic?",
-      "options": [
-        "Brute force attack",
-        "Phishing",
-        "Man-in-the-middle",
-        "SQL injection"
-      ],
-      "correctAnswer": "B",
-      "difficulty": "Medium",
-      "topic": "Application Security"
-    },
-    {
-      "questionId": "Q021",
-      "questionText": "What is a common practice to protect sensitive data at rest?",
-      "options": [
-        "Encryption",
-        "Firewall",
-        "Antivirus",
-        "VPN"
-      ],
-      "correctAnswer": "A",
-      "difficulty": "Medium",
-      "topic": "Data Protection"
-    },
-    {
-      "questionId": "Q022",
-      "questionText": "Which of the following is a secure way to store passwords?",
-      "options": [
-        "Plain text",
-        "Hashing",
-        "Encryption",
-        "Base64 encoding"
-      ],
-      "correctAnswer": "B",
-      "difficulty": "Hard",
-      "topic": "Access Control"
-    },
-    {
-      "questionId": "Q023",
-      "questionText": "What is the purpose of a security audit?",
-      "options": [
-        "To identify vulnerabilities",
-        "To test system performance",
-        "To optimize code",
-        "To manage users"
-      ],
-      "correctAnswer": "A",
-      "difficulty": "Medium",
-      "topic": "Security Operations"
-    },
-    {
-      "questionId": "Q024",
-      "questionText": "Which of the following is a common attack on web applications?",
-      "options": [
-        "Cross-site scripting",
-        "DNS poisoning",
-        "ARP spoofing",
-        "Phishing"
-      ],
-      "correctAnswer": "A",
-      "difficulty": "Medium",
-      "topic": "Application Security"
-    },
-    {
-      "questionId": "Q025",
-      "questionText": "What is a key principle of zero trust security?",
-      "options": [
-        "Trust everyone",
-        "Always verify",
-        "Ignore threats",
-        "Use weak passwords"
-      ],
-      "correctAnswer": "B",
-      "difficulty": "Hard",
-      "topic": "Access Control"
+      "correctAnswer": "D"
     }
   ],
   "presetsLibrary": {
@@ -1040,45 +540,7 @@
       "presetId": "default",
       "displayName": "Default",
       "flashingTile": {
-        "blueProb": 0.8,
-        "redProb": 0.2,
-        "blueEffect": {
-          "type": "item",
-          "itemTypes": [
-            "rocket",
-            "bomb"
-          ],
-          "itemProb": 0.5
-        },
-        "redEffect": {
-          "type": "penalty",
-          "penaltySteps": 2
-        }
-      },
-      "earthquake": {
-        "magnitude": 3,
-        "interval": 60
-      },
-      "bonus": {
-        "interval": 180,
-        "forwardSteps": 5
-      },
-      "items": {
-        "rocket": {
-          "enabled": true,
-          "steps": 3
-        },
-        "bomb": {
-          "enabled": true,
-          "steps": 3
-        }
-      }
-    },
-    "my_preset123": {
-      "presetId": "my_preset123",
-      "displayName": "Custom",
-      "flashingTile": {
-        "blueProb": 0.7,
+        "blueProb": 0.3,
         "redProb": 0.3,
         "blueEffect": {
           "type": "item",

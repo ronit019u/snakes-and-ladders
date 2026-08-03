@@ -46,7 +46,7 @@ function setupSocket() {
   onSocketConnect(() => {
     $('socket-dot').classList.add('on');
     $('socket-status').innerText = 'connected';
-    if (sessionId) joinRoom(sessionId);
+    if (sessionId) joinRoom(sessionId, playerId);
   });
   onSocketDisconnect(() => {
     $('socket-dot').classList.remove('on');
@@ -89,7 +89,7 @@ function enterWaitingRoom() {
   $('join-screen').classList.add('hidden');
   $('waiting-screen').classList.remove('hidden');
   $('session-code-display').innerText = sessionId;
-  joinRoom(sessionId);
+  joinRoom(sessionId, playerId);
   pollTimer = setInterval(pollState, 2000);
   pollState();
 }
@@ -305,6 +305,7 @@ function init() {
     }
   };
   $('target-cancel-btn').onclick = () => $('target-overlay').classList.remove('active');
+  $('api-base').value = state.apiBase;
   setApiBase($('api-base').value);
   setupSocket();
 }
