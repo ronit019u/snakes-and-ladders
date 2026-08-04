@@ -296,11 +296,104 @@
           "inventory": []
         }
       ]
+    },
+    "msecgxmxwub31g": {
+      "sessionId": "msecgxmxwub31g",
+      "ownerId": "pmsecgxmxbb0dgj",
+      "gameStatus": "InProgress",
+      "createdAt": "2026-08-04T07:36:27.465Z",
+      "startedAt": "2026-08-04T07:36:41.277Z",
+      "completedAt": null,
+      "winnerId": null,
+      "maxPlayers": 25,
+      "usedQuestionIds": [
+        "Q948",
+        "Q946",
+        "Q952",
+        "Q937",
+        "Q935",
+        "Q943",
+        "Q942",
+        "Q938",
+        "Q939",
+        "Q944",
+        "Q950",
+        "Q941",
+        "Q945"
+      ],
+      "players": [
+        {
+          "playerId": "pmsecgxmxbb0dgj",
+          "username": "alice",
+          "currentTile": 43,
+          "tokenColor": "#FF0000",
+          "turnStatus": "active",
+          "inventory": []
+        },
+        {
+          "playerId": "pmsech3aate4hrt",
+          "username": "bob",
+          "currentTile": 50,
+          "tokenColor": "#00FF00",
+          "turnStatus": "active",
+          "inventory": []
+        }
+      ]
+    },
+    "msedzg8gbq9p2q": {
+      "sessionId": "msedzg8gbq9p2q",
+      "ownerId": "admin_msedzg8grifvdr",
+      "gameStatus": "waiting",
+      "createdAt": "2026-08-04T08:18:50.992Z",
+      "startedAt": null,
+      "completedAt": null,
+      "winnerId": null,
+      "maxPlayers": 25,
+      "usedQuestionIds": [],
+      "players": [],
+      "presets": {
+        "presetId": "default",
+        "displayName": "Default",
+        "flashingTile": {
+          "blueProb": 0.3,
+          "redProb": 0.3,
+          "blueEffect": {
+            "type": "item",
+            "itemTypes": [
+              "rocket",
+              "bomb"
+            ],
+            "itemProb": 0.5
+          },
+          "redEffect": {
+            "type": "penalty",
+            "penaltySteps": 2
+          }
+        },
+        "earthquake": {
+          "magnitude": 3,
+          "interval": 60
+        },
+        "bonus": {
+          "interval": 180,
+          "forwardSteps": 5
+        },
+        "items": {
+          "rocket": {
+            "enabled": true,
+            "steps": 3
+          },
+          "bomb": {
+            "enabled": true,
+            "steps": 3
+          }
+        }
+      }
     }
   },
   "questions": [
     {
-      "questionId": "Q934",
+      "questionId": "Q1254",
       "questionText": "3 + 2 = ?",
       "options": [
         "4",
@@ -313,7 +406,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q935",
+      "questionId": "Q1255",
       "questionText": "4 + 1 = ?",
       "options": [
         "5",
@@ -326,7 +419,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q936",
+      "questionId": "Q1256",
       "questionText": "2 + 2 = ?",
       "options": [
         "5",
@@ -339,7 +432,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q937",
+      "questionId": "Q1257",
       "questionText": "5 + 3 = ?",
       "options": [
         "7",
@@ -352,7 +445,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q938",
+      "questionId": "Q1258",
       "questionText": "1 + 0 = ?",
       "options": [
         "2",
@@ -365,7 +458,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q939",
+      "questionId": "Q1259",
       "questionText": "3 + 4 = ?",
       "options": [
         "6",
@@ -378,7 +471,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q940",
+      "questionId": "Q1260",
       "questionText": "2 + 3 = ?",
       "options": [
         "4",
@@ -391,7 +484,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q941",
+      "questionId": "Q1261",
       "questionText": "6 + 2 = ?",
       "options": [
         "8",
@@ -404,7 +497,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q942",
+      "questionId": "Q1262",
       "questionText": "4 + 3 = ?",
       "options": [
         "7",
@@ -417,7 +510,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q943",
+      "questionId": "Q1263",
       "questionText": "2 + 5 = ?",
       "options": [
         "6",
@@ -430,7 +523,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q944",
+      "questionId": "Q1264",
       "questionText": "5 - 2 = ?",
       "options": [
         "3",
@@ -443,7 +536,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q945",
+      "questionId": "Q1265",
       "questionText": "4 - 1 = ?",
       "options": [
         "2",
@@ -456,7 +549,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q946",
+      "questionId": "Q1266",
       "questionText": "3 - 0 = ?",
       "options": [
         "2",
@@ -469,7 +562,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q947",
+      "questionId": "Q1267",
       "questionText": "6 - 3 = ?",
       "options": [
         "3",
@@ -482,7 +575,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q948",
+      "questionId": "Q1268",
       "questionText": "5 - 4 = ?",
       "options": [
         "2",
@@ -495,7 +588,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q949",
+      "questionId": "Q1269",
       "questionText": "7 - 2 = ?",
       "options": [
         "4",
@@ -508,7 +601,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q950",
+      "questionId": "Q1270",
       "questionText": "3 - 1 = ?",
       "options": [
         "1",
@@ -521,7 +614,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q951",
+      "questionId": "Q1271",
       "questionText": "8 - 3 = ?",
       "options": [
         "5",
@@ -534,7 +627,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q952",
+      "questionId": "Q1272",
       "questionText": "4 - 2 = ?",
       "options": [
         "1",
@@ -547,7 +640,7 @@
       "topic": "Math"
     },
     {
-      "questionId": "Q953",
+      "questionId": "Q1273",
       "questionText": "6 - 4 = ?",
       "options": [
         "3",
@@ -564,6 +657,44 @@
     "default": {
       "presetId": "default",
       "displayName": "Default",
+      "flashingTile": {
+        "blueProb": 0.3,
+        "redProb": 0.3,
+        "blueEffect": {
+          "type": "item",
+          "itemTypes": [
+            "rocket",
+            "bomb"
+          ],
+          "itemProb": 0.5
+        },
+        "redEffect": {
+          "type": "penalty",
+          "penaltySteps": 2
+        }
+      },
+      "earthquake": {
+        "magnitude": 3,
+        "interval": 60
+      },
+      "bonus": {
+        "interval": 180,
+        "forwardSteps": 5
+      },
+      "items": {
+        "rocket": {
+          "enabled": true,
+          "steps": 3
+        },
+        "bomb": {
+          "enabled": true,
+          "steps": 3
+        }
+      }
+    },
+    "my_preset": {
+      "presetId": "my_preset",
+      "displayName": "Custom",
       "flashingTile": {
         "blueProb": 0.3,
         "redProb": 0.3,
