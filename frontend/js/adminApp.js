@@ -1,9 +1,10 @@
 // js/adminApp.js
-// Entry point for admin.html — real calls against the CyberSnake backend.
+// Admin dashboard – passes flashing tile colors from presets to the board.
+
 import { state, setApiBase } from './config.js';
 import { GameAPI, AdminAPI } from './apiService.js';
 import { connectSocket, onSocketConnect, onSocketDisconnect, onSocketEvent, joinRoom } from './socketService.js';
-import { buildBoard, renderTokens } from './boardData.js';
+import { buildBoard, renderTokens, getFlashingTileColors } from './boardData.js';
 
 let sessionId = null;
 let pollTimer = null;
@@ -14,12 +15,9 @@ function showMsg(elId, text, ok) {
   $(elId).innerHTML = `<div class="msg ${ok ? 'ok' : 'err'}">${text}</div>`;
 }
 
-// Wraps a button handler so it always shows a loading state while in flight,
-// re-enables itself no matter what happens, and can never look "stuck" —
-// even on a network failure, timeout, or thrown exception.
 function withLoadingState(buttonEl, loadingText, fn) {
   return async (...args) => {
-    if (buttonEl.disabled) return; // ignore double-clicks while a request is in flight
+    if (buttonEl.disabled) return;
     const originalText = buttonEl.innerText;
     buttonEl.disabled = true;
     buttonEl.innerText = loadingText;
@@ -90,7 +88,6 @@ async function handleStart() {
   showMsg('setup-msg', r.msg, r.code === 0);
   if (r.code === 0) {
     $('board-card').classList.remove('hidden');
-    buildBoard($('board'));
   }
 }
 
@@ -108,7 +105,12 @@ async function pollState() {
   if (r.data.gameStatus === 'InProgress') {
     if ($('board-card').classList.contains('hidden')) {
       $('board-card').classList.remove('hidden');
-      buildBoard($('board'));
+      const presets = r.data.presets;
+      const flashColors = getFlashingTileColors(
+        presets?.flashingTile?.blueProb || 0.5,
+        presets?.flashingTile?.redProb || 0.3
+      );
+      buildBoard($('board'), flashColors);
     }
     renderTokens(r.data.activePlayers);
   }

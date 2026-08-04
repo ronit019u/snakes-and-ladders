@@ -206,6 +206,96 @@
           }
         }
       }
+    },
+    "msebb4y7flf7vz": {
+      "sessionId": "msebb4y7flf7vz",
+      "ownerId": "pmsebb4y7pl3qce",
+      "gameStatus": "InProgress",
+      "createdAt": "2026-08-04T07:03:57.391Z",
+      "startedAt": "2026-08-04T07:04:09.904Z",
+      "completedAt": null,
+      "winnerId": null,
+      "maxPlayers": 25,
+      "usedQuestionIds": [
+        "Q953",
+        "Q945",
+        "Q943",
+        "Q940",
+        "Q950"
+      ],
+      "players": [
+        {
+          "playerId": "pmsebb4y7pl3qce",
+          "username": "a",
+          "currentTile": 83,
+          "tokenColor": "#FF0000",
+          "turnStatus": "inactive",
+          "inventory": []
+        },
+        {
+          "playerId": "pmsebbdv6337n85",
+          "username": "b",
+          "currentTile": 1,
+          "tokenColor": "#00FF00",
+          "turnStatus": "inactive",
+          "inventory": [
+            "bomb"
+          ]
+        }
+      ]
+    },
+    "msebb80qxacbal": {
+      "sessionId": "msebb80qxacbal",
+      "ownerId": "pmsebb80qo2p2v4",
+      "gameStatus": "waiting",
+      "createdAt": "2026-08-04T07:04:01.370Z",
+      "startedAt": null,
+      "completedAt": null,
+      "winnerId": null,
+      "maxPlayers": 25,
+      "usedQuestionIds": [],
+      "players": [
+        {
+          "playerId": "pmsebb80qo2p2v4",
+          "username": "b",
+          "currentTile": 0,
+          "tokenColor": "#FF0000",
+          "turnStatus": "inactive",
+          "inventory": []
+        }
+      ]
+    },
+    "msebfbwrafyuvr": {
+      "sessionId": "msebfbwrafyuvr",
+      "ownerId": "pmsebfbwr41u98w",
+      "gameStatus": "InProgress",
+      "createdAt": "2026-08-04T07:07:13.035Z",
+      "startedAt": "2026-08-04T07:07:16.767Z",
+      "completedAt": null,
+      "winnerId": null,
+      "maxPlayers": 25,
+      "usedQuestionIds": [
+        "Q938",
+        "Q947"
+      ],
+      "players": [
+        {
+          "playerId": "pmsebfbwr41u98w",
+          "username": "a",
+          "currentTile": 19,
+          "tokenColor": "#FF0000",
+          "turnStatus": "active",
+          "inventory": []
+        },
+        {
+          "playerId": "pmsebfebk1z8xtc",
+          "username": "b",
+          "currentTile": 17,
+          "tokenColor": "#00FF00",
+          "turnStatus": "active",
+          "inventory": []
+        }
+      ]
     }
   },
   "questions": [
