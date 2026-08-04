@@ -1,3 +1,12 @@
+Changelog – 2026-08-04
+
+Fixed Excel question bank upload encoding issues; added support for parsing .xlsx / .xls files
+
+Changed upload mode to replace (overwrites existing question bank with the new one) for clearer demonstration
+
+Added xlsx and iconv-lite dependencies to enable Excel parsing and encoding conversion (GBK/UTF-8)
+
+
 Changelog – 2026-08-02
 
 List of fixes:
