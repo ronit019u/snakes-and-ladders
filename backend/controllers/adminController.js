@@ -1,6 +1,8 @@
 // controllers/adminController.js
 const { readDB, writeDB, generateId } = require('../services/dbService');
 const { DEFAULT_PRESET, getPreset } = require('../services/gameLogic');
+const XLSX = require('xlsx');
+const iconv = require('iconv-lite');
 
 // ---------- POST /api/admin/login ----------
 function adminLogin(req, res) {
@@ -188,35 +190,81 @@ function uploadQuestions(req, res) {
         }
 
         const db = readDB();
-        const content = file.data.toString('utf-8');
-        const lines = content.split('\n').filter(line => line.trim() !== '');
-        const startIndex = lines[0].toLowerCase().includes('question') ? 1 : 0;
-        const newQuestions = [];
+        let newQuestions = [];
 
-        // 解析 CSV 内容
+        // ---------- CSV 解析 ----------
+        if (ext === 'csv') {
+            // 先尝试 GBK 解码，失败则 fallback 到 UTF-8
+            let content;
+            try {
+                content = iconv.decode(file.data, 'gbk');
+            } catch (err) {
+                content = file.data.toString('utf-8');
+            }
 
-        const maxId = db.questions.reduce((max, q) => {
-            const num = parseInt(q.questionId.replace('Q', ''));
-            return num > max ? num : max;
-        }, 0);
-        let counter = 0;
+            const lines = content.split('\n').filter(line => line.trim() !== '');
+            const startIndex = lines[0].toLowerCase().includes('question') ? 1 : 0;
 
-        for (let i = startIndex; i < lines.length; i++) {
-            // 在解析 CSV 内容的循环中，去掉字段首尾的引号
-            const parts = lines[i].split(',').map(s => s.trim().replace(/^"|"$/g, ''));
-            if (parts.length >= 7) {
+            // 计算当前最大 Q 编号
+            const maxId = db.questions.reduce((max, q) => {
+                const num = parseInt(q.questionId.replace('Q', ''));
+                return num > max ? num : max;
+            }, 0);
+            let counter = 0;
+
+            for (let i = startIndex; i < lines.length; i++) {
+                const parts = lines[i].split(',').map(s => s.trim().replace(/^"|"$/g, ''));
+                if (parts.length >= 7) {
+                    counter++;
+                    newQuestions.push({
+                        questionId: 'Q' + String(maxId + counter).padStart(3, '0'),
+                        questionText: parts[0],
+                        options: [parts[1], parts[2], parts[3], parts[4]],
+                        correctAnswer: parts[5],
+                        difficulty: parts[6] || 'Medium',
+                        topic: parts[7] || 'General'
+                    });
+                }
+            }
+        }
+
+        // ---------- Excel 解析 (.xlsx / .xls) ----------
+        else if (['xlsx', 'xls'].includes(ext)) {
+            const workbook = XLSX.read(file.data, { type: 'buffer' });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+            // 计算当前最大 Q 编号
+            const maxId = db.questions.reduce((max, q) => {
+                const num = parseInt(q.questionId.replace('Q', ''));
+                return num > max ? num : max;
+            }, 0);
+            let counter = 0;
+
+            // 固定使用英文列名：question, optionA, optionB, optionC, optionD, correct, difficulty, topic
+            for (const row of rows) {
+                const questionText = row.question?.toString().trim();
+                if (!questionText) continue; // 跳过空行
+
                 counter++;
                 newQuestions.push({
                     questionId: 'Q' + String(maxId + counter).padStart(3, '0'),
-                    questionText: parts[0],
-                    options: [parts[1], parts[2], parts[3], parts[4]],
-                    correctAnswer: parts[5],
-                    difficulty: parts[6] || 'Medium',
-                    topic: parts[7] || 'General'
+                    questionText: questionText,
+                    options: [
+                        row.optionA?.toString().trim() || '',
+                        row.optionB?.toString().trim() || '',
+                        row.optionC?.toString().trim() || '',
+                        row.optionD?.toString().trim() || ''
+                    ],
+                    correctAnswer: row.correct?.toString().trim().toUpperCase() || '',
+                    difficulty: row.difficulty?.toString().trim() || 'Medium',
+                    topic: row.topic?.toString().trim() || 'General'
                 });
             }
         }
 
+        // ---------- 检查是否解析到有效题目 ----------
         if (newQuestions.length === 0) {
             return res.json({
                 code: 2013,
@@ -225,32 +273,18 @@ function uploadQuestions(req, res) {
             });
         }
 
-        // 替换题库
-        const existingTexts = db.questions.map(q => q.questionText);
-        const uniqueNew = newQuestions.filter(q => !existingTexts.includes(q.questionText));
-        db.questions = db.questions.concat(uniqueNew);
+        // ---------- 替换模式：完全替换现有题库 ----------
+        db.questions = newQuestions;
         writeDB(db);
-        if (uniqueNew.length === 0) {
-            return res.json({
-                code: 0,
-                data: {
-                    uploaded: 0,
-                    skipped: newQuestions.length,
-                    totalQuestions: db.questions.length,
-                    message: 'All questions already exist, no new questions added'
-                },
-                msg: 'No new questions added'
-            });
-        }
+
         return res.json({
             code: 0,
             data: {
-                uploaded: uniqueNew.length,
-                skipped: newQuestions.length - uniqueNew.length,
+                uploaded: newQuestions.length,
                 totalQuestions: db.questions.length,
-                message: `Added ${uniqueNew.length} new questions, skipped ${newQuestions.length - uniqueNew.length} duplicates`
+                message: `Successfully replaced question bank with ${newQuestions.length} questions`
             },
-            msg: `Successfully uploaded ${uniqueNew.length} questions`
+            msg: `Successfully uploaded ${newQuestions.length} questions (replaced existing bank)`
         });
 
     } catch (error) {

@@ -522,7 +522,8 @@ function move(req, res) {
                     gameStatus: session.gameStatus,
                     winnerId: session.winnerId,
                     itemGranted: null,
-                    inventory: player.inventory || []
+                    inventory: player.inventory || [],
+                    diceValue: diceValue
                 },
                 msg: 'Rolled past 100, stay in place'
             });
@@ -552,7 +553,8 @@ function move(req, res) {
                     gameStatus: 'Completed',
                     winnerId: playerId,
                     itemGranted: null,
-                    inventory: player.inventory || []
+                    inventory: player.inventory || [],
+                    diceValue: diceValue
                 },
                 msg: '🎉 Player reached tile 100 and won the game!'
             });
@@ -577,7 +579,8 @@ function move(req, res) {
                     gameStatus: session.gameStatus,
                     winnerId: session.winnerId,
                     itemGranted: null,
-                    inventory: player.inventory || []
+                    inventory: player.inventory || [],
+                    diceValue: diceValue
                 },
                 msg: `Landed on ${tileType} tile, please answer quiz`
             });
@@ -614,7 +617,8 @@ function move(req, res) {
                         gameStatus: session.gameStatus,
                         winnerId: session.winnerId,
                         itemGranted: null,
-                        inventory: player.inventory || []
+                        inventory: player.inventory || [],
+                        diceValue: diceValue
                     },
                     msg: `Landed on red flashing tile, moved back ${effect.steps} tiles`
                 });
@@ -640,7 +644,8 @@ function move(req, res) {
                 gameStatus: session.gameStatus,
                 winnerId: session.winnerId,
                 itemGranted: itemGranted,
-                inventory: player.inventory || []
+                inventory: player.inventory || [],
+                diceValue: diceValue
             },
             msg: isFlashing ? 'Landed on flashing tile' : 'success'
         });

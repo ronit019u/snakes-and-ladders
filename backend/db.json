@@ -1,47 +1,32 @@
 {
   "sessions": {
-    "msc1futblk7rbn": {
-      "sessionId": "msc1futblk7rbn",
-      "ownerId": "admin_msc1futb8uhtgf",
+    "mse61m5lo5rt2e": {
+      "sessionId": "mse61m5lo5rt2e",
+      "ownerId": "admin_mse61m5l6oo6p0",
       "gameStatus": "InProgress",
-      "createdAt": "2026-08-02T16:52:09.024Z",
-      "startedAt": "2026-08-02T16:54:35.949Z",
+      "createdAt": "2026-08-04T04:36:35.049Z",
+      "startedAt": "2026-08-04T04:36:51.027Z",
       "completedAt": null,
       "winnerId": null,
       "maxPlayers": 25,
       "usedQuestionIds": [
-        "Q006"
+        "Q119",
+        "Q318"
       ],
       "players": [
         {
-          "playerId": "pmsc1iacgnqn2av",
-          "username": "angel",
-          "currentTile": 1,
+          "playerId": "pmse61psksnetwm",
+          "username": "a",
+          "currentTile": 0,
           "tokenColor": "#FF0000",
           "turnStatus": "inactive",
           "inventory": []
         },
         {
-          "playerId": "pmsc1igaf0y0r8f",
-          "username": "aqilah",
-          "currentTile": 1,
+          "playerId": "pmse61se0530ph3",
+          "username": "b",
+          "currentTile": 56,
           "tokenColor": "#00FF00",
-          "turnStatus": "inactive",
-          "inventory": []
-        },
-        {
-          "playerId": "pmsc1ilytsevefu",
-          "username": "renoj",
-          "currentTile": 40,
-          "tokenColor": "#0000FF",
-          "turnStatus": "inactive",
-          "inventory": []
-        },
-        {
-          "playerId": "pmsc1iti1yzc7up",
-          "username": "nathan",
-          "currentTile": 20,
-          "tokenColor": "#FFFF00",
           "turnStatus": "inactive",
           "inventory": []
         }
@@ -85,11 +70,11 @@
         }
       }
     },
-    "msc1hctxqva4pz": {
-      "sessionId": "msc1hctxqva4pz",
-      "ownerId": "pmsc1hctx5oznz1",
+    "mse63v69qpwssg": {
+      "sessionId": "mse63v69qpwssg",
+      "ownerId": "admin_mse63v69ic27i5",
       "gameStatus": "waiting",
-      "createdAt": "2026-08-02T16:53:19.030Z",
+      "createdAt": "2026-08-04T04:38:20.049Z",
       "startedAt": null,
       "completedAt": null,
       "winnerId": null,
@@ -97,57 +82,20 @@
       "usedQuestionIds": [],
       "players": [
         {
-          "playerId": "pmsc1hctx5oznz1",
-          "username": "angel",
-          "currentTile": 0,
-          "tokenColor": "#FF0000",
-          "turnStatus": "inactive",
-          "inventory": []
-        }
-      ]
-    },
-    "msc1wcelwb7y0k": {
-      "sessionId": "msc1wcelwb7y0k",
-      "ownerId": "admin_msc1wcelieh4v7",
-      "gameStatus": "waiting",
-      "createdAt": "2026-08-02T17:04:58.317Z",
-      "startedAt": null,
-      "completedAt": null,
-      "winnerId": null,
-      "maxPlayers": 25,
-      "usedQuestionIds": [],
-      "players": [
-        {
-          "playerId": "pmsc1xvsxpnowjs",
-          "username": "edacs",
+          "playerId": "pmse63yf78tz5li",
+          "username": "a",
           "currentTile": 0,
           "tokenColor": "#FF0000",
           "turnStatus": "inactive",
           "inventory": []
         },
         {
-          "playerId": "pmsc1y28azlodmd",
-          "username": "fbs",
+          "playerId": "pmse641v1af913v",
+          "username": "b",
           "currentTile": 0,
           "tokenColor": "#00FF00",
           "turnStatus": "inactive",
           "inventory": []
-        },
-        {
-          "playerId": "pmsc1y9sxltfonm",
-          "username": "fds",
-          "currentTile": 0,
-          "tokenColor": "#0000FF",
-          "turnStatus": "inactive",
-          "inventory": []
-        },
-        {
-          "playerId": "pmsc1yhg0cp6yjf",
-          "username": "vfczx",
-          "currentTile": 0,
-          "tokenColor": "#FFFF00",
-          "turnStatus": "inactive",
-          "inventory": []
         }
       ],
       "presets": {
@@ -189,197 +137,34 @@
         }
       }
     },
-    "msc1ytrvd65j08": {
-      "sessionId": "msc1ytrvd65j08",
-      "ownerId": "admin_msc1ytrw9myktb",
-      "gameStatus": "waiting",
-      "createdAt": "2026-08-02T17:06:54.140Z",
-      "startedAt": null,
-      "completedAt": null,
-      "winnerId": null,
-      "maxPlayers": 25,
-      "usedQuestionIds": [],
-      "players": [],
-      "presets": {
-        "presetId": "default",
-        "displayName": "Default",
-        "flashingTile": {
-          "blueProb": 0.3,
-          "redProb": 0.3,
-          "blueEffect": {
-            "type": "item",
-            "itemTypes": [
-              "rocket",
-              "bomb"
-            ],
-            "itemProb": 0.5
-          },
-          "redEffect": {
-            "type": "penalty",
-            "penaltySteps": 2
-          }
-        },
-        "earthquake": {
-          "magnitude": 3,
-          "interval": 60
-        },
-        "bonus": {
-          "interval": 180,
-          "forwardSteps": 5
-        },
-        "items": {
-          "rocket": {
-            "enabled": true,
-            "steps": 3
-          },
-          "bomb": {
-            "enabled": true,
-            "steps": 3
-          }
-        }
-      }
-    },
-    "msc1z2ulfml61j": {
-      "sessionId": "msc1z2ulfml61j",
-      "ownerId": "admin_msc1z2uly9bjqy",
-      "gameStatus": "waiting",
-      "createdAt": "2026-08-02T17:07:05.901Z",
-      "startedAt": null,
-      "completedAt": null,
-      "winnerId": null,
-      "maxPlayers": 25,
-      "usedQuestionIds": [],
-      "players": [],
-      "presets": {
-        "presetId": "default",
-        "displayName": "Default",
-        "flashingTile": {
-          "blueProb": 0.3,
-          "redProb": 0.3,
-          "blueEffect": {
-            "type": "item",
-            "itemTypes": [
-              "rocket",
-              "bomb"
-            ],
-            "itemProb": 0.5
-          },
-          "redEffect": {
-            "type": "penalty",
-            "penaltySteps": 2
-          }
-        },
-        "earthquake": {
-          "magnitude": 3,
-          "interval": 60
-        },
-        "bonus": {
-          "interval": 180,
-          "forwardSteps": 5
-        },
-        "items": {
-          "rocket": {
-            "enabled": true,
-            "steps": 3
-          },
-          "bomb": {
-            "enabled": true,
-            "steps": 3
-          }
-        }
-      }
-    },
-    "msc1zx7d10ci1u": {
-      "sessionId": "msc1zx7d10ci1u",
-      "ownerId": "admin_msc1zx7dc47qcr",
-      "gameStatus": "waiting",
-      "createdAt": "2026-08-02T17:07:45.241Z",
-      "startedAt": null,
-      "completedAt": null,
-      "winnerId": null,
-      "maxPlayers": 25,
-      "usedQuestionIds": [],
-      "players": [],
-      "presets": {
-        "presetId": "default",
-        "displayName": "Default",
-        "flashingTile": {
-          "blueProb": 0.3,
-          "redProb": 0.3,
-          "blueEffect": {
-            "type": "item",
-            "itemTypes": [
-              "rocket",
-              "bomb"
-            ],
-            "itemProb": 0.5
-          },
-          "redEffect": {
-            "type": "penalty",
-            "penaltySteps": 2
-          }
-        },
-        "earthquake": {
-          "magnitude": 3,
-          "interval": 60
-        },
-        "bonus": {
-          "interval": 180,
-          "forwardSteps": 5
-        },
-        "items": {
-          "rocket": {
-            "enabled": true,
-            "steps": 3
-          },
-          "bomb": {
-            "enabled": true,
-            "steps": 3
-          }
-        }
-      }
-    },
-    "msc20fzl5n6fab": {
-      "sessionId": "msc20fzl5n6fab",
-      "ownerId": "admin_msc20fzl5bi16z",
+    "mse9eo6c3fzlz7": {
+      "sessionId": "mse9eo6c3fzlz7",
+      "ownerId": "admin_mse9eo6ch3tltb",
       "gameStatus": "InProgress",
-      "createdAt": "2026-08-02T17:08:09.585Z",
-      "startedAt": "2026-08-02T17:09:05.744Z",
+      "createdAt": "2026-08-04T06:10:43.044Z",
+      "startedAt": "2026-08-04T06:11:15.384Z",
       "completedAt": null,
       "winnerId": null,
       "maxPlayers": 25,
-      "usedQuestionIds": [],
+      "usedQuestionIds": [
+        "Q906",
+        "Q943"
+      ],
       "players": [
         {
-          "playerId": "pmsc20mvc3lhgor",
-          "username": "frd",
+          "playerId": "pmse9f80ghhwqza",
+          "username": "a",
           "currentTile": 0,
           "tokenColor": "#FF0000",
           "turnStatus": "inactive",
           "inventory": []
         },
         {
-          "playerId": "pmsc21b0tnmw3ad",
-          "username": "gfd",
-          "currentTile": 0,
+          "playerId": "pmse9fca0qx6mtv",
+          "username": "v",
+          "currentTile": 85,
           "tokenColor": "#00FF00",
-          "turnStatus": "inactive",
-          "inventory": []
-        },
-        {
-          "playerId": "pmsc21fq384qazz",
-          "username": "dsx",
-          "currentTile": 0,
-          "tokenColor": "#0000FF",
-          "turnStatus": "inactive",
-          "inventory": []
-        },
-        {
-          "playerId": "pmsc21k0tw4s871",
-          "username": "vsdzc",
-          "currentTile": 12,
-          "tokenColor": "#FFFF00",
-          "turnStatus": "inactive",
+          "turnStatus": "active",
           "inventory": []
         }
       ],
@@ -425,114 +210,264 @@
   },
   "questions": [
     {
-      "questionId": "Q001",
-      "questionText": "What does HTTP stand for?",
-      "options": [
-        "Hyper Text Transfer Protocol",
-        "High Tech Transfer Protocol",
-        "Hyper Transfer Text Protocol",
-        "None of the above"
-      ],
-      "correctAnswer": "A"
-    },
-    {
-      "questionId": "Q002",
-      "questionText": "What is the default port for HTTPS?",
-      "options": [
-        "80",
-        "443",
-        "8080",
-        "22"
-      ],
-      "correctAnswer": "B"
-    },
-    {
-      "questionId": "Q003",
-      "questionText": "Which of these is a NoSQL database?",
-      "options": [
-        "MySQL",
-        "PostgreSQL",
-        "MongoDB",
-        "Oracle"
-      ],
-      "correctAnswer": "C"
-    },
-    {
-      "questionId": "Q004",
-      "questionText": "What does CSS stand for?",
-      "options": [
-        "Cascading Style Sheets",
-        "Creative Style Sheets",
-        "Computer Style Sheets",
-        "Colorful Style Sheets"
-      ],
-      "correctAnswer": "A"
-    },
-    {
-      "questionId": "Q005",
-      "questionText": "Which HTML tag is used to create a hyperlink?",
-      "options": [
-        "<link>",
-        "<a>",
-        "<href>",
-        "<url>"
-      ],
-      "correctAnswer": "B"
-    },
-    {
-      "questionId": "Q006",
-      "questionText": "What is the correct way to declare a variable in JavaScript?",
-      "options": [
-        "var x = 5;",
-        "variable x = 5;",
-        "v x = 5;",
-        "let x: 5;"
-      ],
-      "correctAnswer": "A"
-    },
-    {
-      "questionId": "Q007",
-      "questionText": "Which protocol is used to send email?",
-      "options": [
-        "HTTP",
-        "FTP",
-        "SMTP",
-        "SSH"
-      ],
-      "correctAnswer": "C"
-    },
-    {
-      "questionId": "Q008",
-      "questionText": "What is the file extension for a Java source file?",
-      "options": [
-        ".java",
-        ".class",
-        ".jav",
-        ".js"
-      ],
-      "correctAnswer": "A"
-    },
-    {
-      "questionId": "Q009",
-      "questionText": "What is the output of 2 + \"2\" in JavaScript?",
+      "questionId": "Q934",
+      "questionText": "3 + 2 = ?",
       "options": [
         "4",
-        "\"4\"",
-        "\"22\"",
-        "Error"
+        "5",
+        "6",
+        "7"
       ],
-      "correctAnswer": "C"
+      "correctAnswer": "B",
+      "difficulty": "Easy",
+      "topic": "Math"
     },
     {
-      "questionId": "Q010",
-      "questionText": "Which company developed Node.js?",
+      "questionId": "Q935",
+      "questionText": "4 + 1 = ?",
       "options": [
-        "Google",
-        "Facebook",
-        "Microsoft",
-        "Joyent"
+        "5",
+        "3",
+        "6",
+        "4"
       ],
-      "correctAnswer": "D"
+      "correctAnswer": "A",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q936",
+      "questionText": "2 + 2 = ?",
+      "options": [
+        "5",
+        "4",
+        "3",
+        "6"
+      ],
+      "correctAnswer": "B",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q937",
+      "questionText": "5 + 3 = ?",
+      "options": [
+        "7",
+        "8",
+        "9",
+        "6"
+      ],
+      "correctAnswer": "B",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q938",
+      "questionText": "1 + 0 = ?",
+      "options": [
+        "2",
+        "1",
+        "3",
+        "0"
+      ],
+      "correctAnswer": "B",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q939",
+      "questionText": "3 + 4 = ?",
+      "options": [
+        "6",
+        "8",
+        "7",
+        "5"
+      ],
+      "correctAnswer": "C",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q940",
+      "questionText": "2 + 3 = ?",
+      "options": [
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "correctAnswer": "B",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q941",
+      "questionText": "6 + 2 = ?",
+      "options": [
+        "8",
+        "9",
+        "7",
+        "6"
+      ],
+      "correctAnswer": "A",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q942",
+      "questionText": "4 + 3 = ?",
+      "options": [
+        "7",
+        "8",
+        "6",
+        "9"
+      ],
+      "correctAnswer": "A",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q943",
+      "questionText": "2 + 5 = ?",
+      "options": [
+        "6",
+        "8",
+        "7",
+        "9"
+      ],
+      "correctAnswer": "C",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q944",
+      "questionText": "5 - 2 = ?",
+      "options": [
+        "3",
+        "4",
+        "2",
+        "5"
+      ],
+      "correctAnswer": "A",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q945",
+      "questionText": "4 - 1 = ?",
+      "options": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "correctAnswer": "B",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q946",
+      "questionText": "3 - 0 = ?",
+      "options": [
+        "2",
+        "3",
+        "4",
+        "1"
+      ],
+      "correctAnswer": "B",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q947",
+      "questionText": "6 - 3 = ?",
+      "options": [
+        "3",
+        "4",
+        "2",
+        "5"
+      ],
+      "correctAnswer": "A",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q948",
+      "questionText": "5 - 4 = ?",
+      "options": [
+        "2",
+        "1",
+        "3",
+        "4"
+      ],
+      "correctAnswer": "B",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q949",
+      "questionText": "7 - 2 = ?",
+      "options": [
+        "4",
+        "5",
+        "6",
+        "3"
+      ],
+      "correctAnswer": "B",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q950",
+      "questionText": "3 - 1 = ?",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "correctAnswer": "B",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q951",
+      "questionText": "8 - 3 = ?",
+      "options": [
+        "5",
+        "6",
+        "4",
+        "7"
+      ],
+      "correctAnswer": "A",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q952",
+      "questionText": "4 - 2 = ?",
+      "options": [
+        "1",
+        "3",
+        "2",
+        "4"
+      ],
+      "correctAnswer": "C",
+      "difficulty": "Easy",
+      "topic": "Math"
+    },
+    {
+      "questionId": "Q953",
+      "questionText": "6 - 4 = ?",
+      "options": [
+        "3",
+        "2",
+        "4",
+        "5"
+      ],
+      "correctAnswer": "B",
+      "difficulty": "Easy",
+      "topic": "Math"
     }
   ],
   "presetsLibrary": {
