@@ -69,7 +69,49 @@ function applyPlayerFinish(session, player) {
     }
 }
 
+// services/playerHelpers.js
+
+/**
+ * 检查玩家最终落点是否触发 10 倍数格子的奖励回合
+ * 每个 10 倍数格子（10,20,...,90）全场只能触发一次
+ * @param {Object} session - 会话对象
+ * @param {Object} player - 移动后的玩家
+ * @param {string} sessionId - 会话 ID
+ * @param {Object} socketService - Socket 服务
+ * @param {Object} bonusController - 奖励回合控制器
+ * @returns {boolean} 是否触发了奖励回合
+ */
+function checkTileBonusTrigger(session, player, sessionId, socketService, bonusController) {
+    // 已完成玩家不触发
+    if (player.completedAt) return false;
+    // 游戏未开始或已结束不触发
+    if (session.gameStatus !== 'InProgress') return false;
+
+    const currentTile = player.currentTile;
+    // 只有 10-99 才可能触发（100 不触发）
+    if (currentTile < 10 || currentTile >= 100) return false;
+
+    // 计算当前所在的 10 倍数格子 (10, 20, 30, ..., 90)
+    const tileGroup = Math.floor(currentTile / 10) * 10; // 向下取整到 10 的倍数
+    // 例如：currentTile=12 → 10, currentTile=25 → 20, currentTile=99 → 90
+
+    // 如果该格子已经触发过，不再触发
+    const triggered = session.triggeredBonusTiles || [];
+    if (triggered.includes(tileGroup)) return false;
+
+    // 触发奖励回合
+    const result = bonusController.startBonusRoundLogicOnly(sessionId);
+    if (result.code === 0) {
+        session.triggeredBonusTiles.push(tileGroup);
+        socketService.broadcastGameEvent(sessionId, 'bonus_round_started', result.data);
+        socketService.scheduleBonusExpiry(sessionId, result.data.bonusRoundId);
+        return true;
+    }
+    return false;
+}
+
 module.exports = {
     buildPublicPlayerList,
-    applyPlayerFinish
+    applyPlayerFinish,
+    checkTileBonusTrigger
 };

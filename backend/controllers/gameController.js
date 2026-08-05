@@ -1,8 +1,9 @@
 // controllers/gameController.js
 const { readDB, writeDB, generateId } = require('../services/dbService');
 const gameLogic = require('../services/gameLogic');
+const bonusController = require('../controllers/bonusController');
 const socketService = require('../services/socketService');
-const { buildPublicPlayerList, applyPlayerFinish } = require('../services/playerHelpers');
+const { buildPublicPlayerList, applyPlayerFinish, checkTileBonusTrigger } = require('../services/playerHelpers');
 
 // 颜色池（25种，来自 SRS 9.3）
 const COLOR_PALETTE = [
@@ -72,6 +73,7 @@ function create(req, res) {
             winnerId: null,
             maxPlayers: 25,
             usedQuestionIds: [],
+            triggeredBonusTiles: [],
             players: [
                 {
                     playerId: playerId,
@@ -80,7 +82,7 @@ function create(req, res) {
                     tokenColor: getNextColor([]),
                     turnStatus: 'active',
                     inventory: [],
-                    completedAt: null 
+                    completedAt: null
                 }
             ]
         };
@@ -202,7 +204,7 @@ function join(req, res) {
             tokenColor: getNextColor(session.players),
             turnStatus: 'active',
             inventory: [],
-            completedAt: null  
+            completedAt: null
         };
 
         session.players.push(newPlayer);
@@ -444,6 +446,7 @@ function move(req, res) {
                 });
             }
 
+            checkTileBonusTrigger(session, player, sessionId, socketService, bonusController);
             writeDB(db);
             socketService.broadcastGameEvent(sessionId, 'move_update', {
                 playerId,
@@ -580,6 +583,7 @@ function move(req, res) {
             }
         }
 
+        checkTileBonusTrigger(session, player, sessionId, socketService, bonusController);
         writeDB(db);
         socketService.broadcastGameEvent(sessionId, 'move_update', {
             playerId,
@@ -765,7 +769,7 @@ function useItem(req, res) {
                 msg: result.gameStatus === 'Completed' ? '🎉 Rocket reached 100, game over!' : 'Rocket used, reached 100!'
             });
         }
-
+        checkTileBonusTrigger(session, player, sessionId, socketService, bonusController);
         writeDB(db);
 
         socketService.broadcastGameEvent(sessionId, 'item_used', {

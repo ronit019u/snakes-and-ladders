@@ -309,5 +309,6 @@ module.exports = {
     broadcastBonusResult,
     broadcastGameEvent,
     startSessionTimers,
-    stopSessionTimers
+    stopSessionTimers,
+    scheduleBonusExpiry
 };

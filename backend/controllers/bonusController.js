@@ -6,7 +6,8 @@ const { buildPublicPlayerList, applyPlayerFinish } = require('../services/player
 
 const activeBonusRounds = {};
 
-function startBonusRoundLogic(sessionId) {
+// 原 startBonusRoundLogicOnly 保持不变，但让它返回 db 和 session
+function startBonusRoundLogicOnly(sessionId) {
     if (!sessionId) {
         return { code: 1001, data: null, msg: 'Missing required field: sessionId' };
     }
@@ -38,7 +39,6 @@ function startBonusRoundLogic(sessionId) {
     const selected = availableQuestions[randomIndex];
 
     session.usedQuestionIds.push(selected.questionId);
-    writeDB(db);
 
     const bonusRoundId = 'br_' + generateId();
     activeBonusRounds[bonusRoundId] = {
@@ -56,11 +56,31 @@ function startBonusRoundLogic(sessionId) {
             questionText: selected.questionText,
             options: selected.options
         },
-        msg: 'Bonus round started'
+        msg: 'Bonus round started',
+        // 新增：返回 db 和 session 引用，供调用者写库
+        _db: db,
+        _session: session
     };
 }
 
+// 修改 startBonusRoundLogic，直接使用返回的 db 写库，不再重新读取
+function startBonusRoundLogic(sessionId) {
+    const result = startBonusRoundLogicOnly(sessionId);
+    if (result.code === 0 && result._db && result._session) {
+        // 直接使用同一个 db 实例写库，不会丢失修改
+        writeDB(result._db);
+    }
+    // 返回时去掉内部字段
+    return {
+        code: result.code,
+        data: result.data,
+        msg: result.msg
+    };
+}
+
+
 // ---------- POST /api/bonus/start ----------
+
 function startBonusRound(req, res) {
     try {
         const { sessionId } = req.body;
@@ -291,6 +311,7 @@ function getActiveBonusRound(sessionId) {
 module.exports = {
     startBonusRound,
     startBonusRoundLogic,
+    startBonusRoundLogicOnly,
     submitBonusAnswer,
     expireBonusRound,
     getActiveBonusRound,
