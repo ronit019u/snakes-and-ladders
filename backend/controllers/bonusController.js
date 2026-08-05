@@ -223,13 +223,8 @@ function submitBonusAnswer(req, res) {
                 console.warn('[Bonus] Unknown reward type:', reward.type);
         }
 
-        let gameStatus = session.gameStatus;
-        let winnerId = session.winnerId;
-
         if (newTile === 100) {
             const result = applyPlayerFinish(session, player);
-            gameStatus = result.gameStatus;
-            winnerId = result.winnerId;
         }
 
         writeDB(db);
