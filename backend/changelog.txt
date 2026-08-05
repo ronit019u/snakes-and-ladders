@@ -1,3 +1,8 @@
+Changelog – 2026-08-06
+
+Added 10-multiple tile bonus trigger: introduced session.triggeredBonusTiles to track triggered tiles (10,20,...,90) per session; added checkTileBonusTrigger in playerHelpers.js to fire a bonus round when a player lands on a tile whose 10-multiple group hasn't been triggered; integrated the check in gameController.move (dice, quiz, rocket) and useItem after valid moves.
+
+
 Changelog – 2026-08-05
 
 Added services/playerHelpers.js: centralized buildPublicPlayerList and applyPlayerFinish to unify player list construction and finish logic, eliminating code duplication and adding completedAt field to public player data.
