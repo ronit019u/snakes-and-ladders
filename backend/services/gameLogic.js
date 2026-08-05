@@ -16,7 +16,7 @@ const FLASHING_TILES = [5, 12, 28, 35, 42, 58, 65, 72, 88, 95];
 
 
 
-function calculateTargetTile(landingTile, isCorrect, tileType) {
+function calculateTargetTile(landingTile, isCorrect) {
   // Check for ladder
   const ladder = LADDERS.find(l => l[0] === landingTile);
   if (ladder) {

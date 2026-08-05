@@ -107,6 +107,10 @@ function validateAnswer(req, res) {
             return res.json({ code: 2004, data: null, msg: 'Player not found' });
         }
 
+        if (player.completedAt) {
+            return res.json({ code: 2020, data: null, msg: 'Player already finished' });
+        }
+
         // 4. 验证问题是否属于该会话
         if (!session.usedQuestionIds.includes(questionId)) {
             return res.json({
@@ -131,7 +135,7 @@ function validateAnswer(req, res) {
 
         // 7. 计算 targetTile
         const currentTile = player.currentTile;
-        const targetTile = gameLogic.calculateTargetTile(currentTile, isCorrect, 'ladder');
+        const targetTile = gameLogic.calculateTargetTile(currentTile, isCorrect);
 
         // 8. 返回结果
         return res.json({

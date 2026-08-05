@@ -2,13 +2,10 @@
 const { readDB, writeDB, generateId } = require('../services/dbService');
 const gameLogic = require('../services/gameLogic');
 const socketService = require('../services/socketService');
+const { buildPublicPlayerList, applyPlayerFinish } = require('../services/playerHelpers');
 
-// ---------- 内存缓存：活跃的 bonus rounds ----------
-// 结构: { bonusRoundId: { sessionId, questionId, winnerId, startTime } }
 const activeBonusRounds = {};
 
-// ---------- 内部共享逻辑：启动一个 bonus round ----------
-// 供 REST 路由（下方 startBonusRound）与 socketService 的定时自动触发共用。
 function startBonusRoundLogic(sessionId) {
     if (!sessionId) {
         return { code: 1001, data: null, msg: 'Missing required field: sessionId' };
@@ -64,7 +61,6 @@ function startBonusRoundLogic(sessionId) {
 }
 
 // ---------- POST /api/bonus/start ----------
-// 注意：此端点仅供内部调用（Socket/逻辑层触发）
 function startBonusRound(req, res) {
     try {
         const { sessionId } = req.body;
@@ -92,7 +88,6 @@ function submitBonusAnswer(req, res) {
         const playerId = req.session.playerId;
         const sessionId = req.session.sessionId;
 
-        // 1. 验证必要字段
         if (!bonusRoundId || !selectedOption) {
             return res.json({
                 code: 1001,
@@ -101,7 +96,6 @@ function submitBonusAnswer(req, res) {
             });
         }
 
-        // 2. 验证选项格式
         if (!['A', 'B', 'C', 'D'].includes(selectedOption)) {
             return res.json({
                 code: 1003,
@@ -110,7 +104,6 @@ function submitBonusAnswer(req, res) {
             });
         }
 
-        // 3. 验证身份
         if (!playerId || !sessionId) {
             return res.json({
                 code: 2004,
@@ -119,7 +112,6 @@ function submitBonusAnswer(req, res) {
             });
         }
 
-        // 4. 验证 bonus round 是否存在且活跃
         const bonus = activeBonusRounds[bonusRoundId];
         if (!bonus) {
             return res.json({
@@ -129,7 +121,6 @@ function submitBonusAnswer(req, res) {
             });
         }
 
-        // 5. 验证 bonus round 属于当前会话
         if (bonus.sessionId !== sessionId) {
             return res.json({
                 code: 2016,
@@ -138,7 +129,6 @@ function submitBonusAnswer(req, res) {
             });
         }
 
-        // 6. 检查是否已经有赢家
         if (bonus.winnerId) {
             return res.json({
                 code: 0,
@@ -150,7 +140,6 @@ function submitBonusAnswer(req, res) {
             });
         }
 
-        // 7. 验证玩家是否在会话中
         const db = readDB();
         const session = db.sessions[sessionId];
         if (!session) {
@@ -170,7 +159,14 @@ function submitBonusAnswer(req, res) {
             });
         }
 
-        // 8. 查找题目
+        if (player.completedAt) {
+            return res.json({
+                code: 2020,
+                data: null,
+                msg: 'Player already finished the game'
+            });
+        }
+
         const question = db.questions.find(q => q.questionId === bonus.questionId);
         if (!question) {
             return res.json({
@@ -180,7 +176,6 @@ function submitBonusAnswer(req, res) {
             });
         }
 
-        // 9. 判断对错
         const isCorrect = selectedOption === question.correctAnswer;
 
         if (!isCorrect) {
@@ -193,9 +188,7 @@ function submitBonusAnswer(req, res) {
             });
         }
 
-        // 10. 答对了！原子锁定赢家
         if (bonus.winnerId) {
-            // 理论上不会发生，因为上面已经检查了，但以防并发
             return res.json({
                 code: 0,
                 data: {
@@ -206,10 +199,8 @@ function submitBonusAnswer(req, res) {
             });
         }
 
-        // 锁定赢家
         bonus.winnerId = playerId;
 
-        // 11. 应用奖励
         const reward = gameLogic.getBonusReward(session.presets);
         let newTile = player.currentTile;
         let itemGranted = null;
@@ -226,29 +217,23 @@ function submitBonusAnswer(req, res) {
                 if (player.inventory.length < 3) {
                     player.inventory.push(itemGranted);
                 }
-                // 背包已满时，itemGranted 保留但未写入
                 break;
 
-            // 其他类型可以在这里继续扩展
             default:
                 console.warn('[Bonus] Unknown reward type:', reward.type);
         }
 
-        // 12. 检查胜利
         let gameStatus = session.gameStatus;
         let winnerId = session.winnerId;
+
         if (newTile === 100) {
-            gameStatus = 'Completed';
-            winnerId = playerId;
-            session.gameStatus = gameStatus;
-            session.winnerId = winnerId;
-            session.completedAt = new Date().toISOString();
+            const result = applyPlayerFinish(session, player);
+            gameStatus = result.gameStatus;
+            winnerId = result.winnerId;
         }
 
-        // 13. 写库
         writeDB(db);
 
-        // ========== 触发 Socket 广播 ==========
         socketService.broadcastBonusResult(sessionId, {
             bonusRoundId: bonusRoundId,
             winnerPlayerId: playerId,
@@ -259,12 +244,22 @@ function submitBonusAnswer(req, res) {
             gameStatus: session.gameStatus,
             winnerId: session.winnerId
         });
-        if (gameStatus === 'Completed') {
+
+        if (session.gameStatus === 'Completed') {
+            socketService.broadcastGameEvent(sessionId, 'game_over', {
+                winnerId: session.winnerId,
+                activePlayers: buildPublicPlayerList(session)
+            });
             socketService.stopSessionTimers(sessionId);
+        } else if (newTile === 100) {
+            socketService.broadcastGameEvent(sessionId, 'move_update', {
+                playerId: playerId,
+                currentTile: 100,
+                activePlayers: buildPublicPlayerList(session)
+            });
         }
 
-
-        // 14. 返回结果
+        // 返回结果
         return res.json({
             code: 0,
             data: {
@@ -274,8 +269,8 @@ function submitBonusAnswer(req, res) {
                 bonusValue: reward.value,
                 sourcePlayerId: playerId,
                 newTile: newTile,
-                gameStatus: gameStatus,
-                winnerId: winnerId
+                gameStatus: session.gameStatus,
+                winnerId: session.winnerId
             },
             msg: `🎉 ${player.username} won the bonus round!`
         });
@@ -290,12 +285,10 @@ function submitBonusAnswer(req, res) {
     }
 }
 
-// ---------- 工具：清理过期的 bonus rounds（由 Socket 层调用） ----------
 function expireBonusRound(bonusRoundId) {
     delete activeBonusRounds[bonusRoundId];
 }
 
-// ---------- 工具：获取活跃的 bonus round（供 Socket 层检查） ----------
 function getActiveBonusRound(sessionId) {
     return Object.values(activeBonusRounds).find(r => r.sessionId === sessionId);
 }
@@ -306,5 +299,5 @@ module.exports = {
     submitBonusAnswer,
     expireBonusRound,
     getActiveBonusRound,
-    activeBonusRounds  // 导出以便外部检查
+    activeBonusRounds
 };

@@ -83,7 +83,7 @@ function adminCreateRoom(req, res) {
         let selectedPreset = DEFAULT_PRESET;
         if (presetId) {
             if (presetsLibrary[presetId]) {
-                selectedPreset = presetsLibrary[presetId];
+                selectedPreset = getPreset(presetsLibrary[presetId]);
             } else {
                 return res.json({
                     code: 2017,

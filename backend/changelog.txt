@@ -1,3 +1,24 @@
+Changelog – 2026-08-05
+
+Added services/playerHelpers.js: centralized buildPublicPlayerList and applyPlayerFinish to unify player list construction and finish logic, eliminating code duplication and adding completedAt field to public player data.
+
+gameController.create / join: added completedAt: null to new player initialization to prepare for finish time tracking.
+
+gameController.getState: switched to buildPublicPlayerList, so the returned leaderboard now automatically includes completedAt for frontend use.
+
+gameController.move: added completedAt check to block finished players from moving; replaced hardcoded win logic with applyPlayerFinish when reaching tile 100.
+
+gameController.useItem: added completedAt check for item users, completedAt validation for bomb targets, and replaced rocket win logic with applyPlayerFinish.
+
+gameController.disconnect: switched to buildPublicPlayerList to maintain consistent leaderboard data format.
+
+bonusController.submitBonusAnswer: added completedAt check to prevent finished players from participating; calls applyPlayerFinish when forward_boost reaches tile 100 with appropriate broadcast handling.
+
+quizController.validateAnswer: added completedAt check to prevent finished players from answering questions.
+
+adminCreateRoom preset loading: wrapped preset with getPreset() to fill in default fields, preventing crashes from manually edited incomplete presets in db.json.
+
+
 Changelog – 2026-08-04
 
 Fixed Excel question bank upload encoding issues; added support for parsing .xlsx / .xls files

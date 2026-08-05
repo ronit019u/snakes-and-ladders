@@ -2,6 +2,7 @@
 const { readDB, writeDB, generateId } = require('../services/dbService');
 const gameLogic = require('../services/gameLogic');
 const socketService = require('../services/socketService');
+const { buildPublicPlayerList, applyPlayerFinish } = require('../services/playerHelpers');
 
 // 颜色池（25种，来自 SRS 9.3）
 const COLOR_PALETTE = [
@@ -18,26 +19,12 @@ function getNextColor(players) {
     return COLOR_PALETTE.find(c => !usedColors.includes(c)) || '#888888';
 }
 
-// 生成对外广播用的玩家列表（按当前位置排序，供排行榜使用）
-function getPublicPlayerList(session) {
-    return [...session.players]
-        .sort((a, b) => b.currentTile - a.currentTile)
-        .map(p => ({
-            playerId: p.playerId,
-            username: p.username,
-            currentTile: p.currentTile,
-            tokenColor: p.tokenColor,
-            turnStatus: p.turnStatus
-        }));
-}
 
 // ---------- 通用：保存 session 并返回响应 ----------
 function saveSessionAndRespond(req, res, playerId, sessionId, responseData, successMsg) {
-    // 手动设置 Session 数据
     req.session.playerId = playerId;
     req.session.sessionId = sessionId;
 
-    // 保存 Session
     req.session.save((err) => {
         if (err) {
             console.error('[Session Save Error]', err);
@@ -52,9 +39,7 @@ function create(req, res) {
     try {
         let { username } = req.body;
 
-        // 1. 验证用户名
         if (username?.trim() === '') {
-            // 空字符串 或 全是空格，都报错
             return res.json({
                 code: 1001,
                 data: null,
@@ -64,14 +49,11 @@ function create(req, res) {
 
         const finalUsername = username?.trim() || `Player_${generateId().slice(0, 4)}`;
 
-        // 2. 生成 ID
-        const sessionId = generateId();   // 房间号
-        const playerId = 'p' + generateId(); // 玩家ID
+        const sessionId = generateId();
+        const playerId = 'p' + generateId();
 
-        // 3. 读取数据库
         const db = readDB();
 
-        // 4. 检查 sessionId 是否冲突（极小概率，但安全起见）
         if (db.sessions[sessionId]) {
             return res.json({
                 code: 5000,
@@ -80,7 +62,6 @@ function create(req, res) {
             });
         }
 
-        // 5. 创建新会话
         db.sessions[sessionId] = {
             sessionId: sessionId,
             ownerId: playerId,
@@ -98,15 +79,14 @@ function create(req, res) {
                     currentTile: 0,
                     tokenColor: getNextColor([]),
                     turnStatus: 'active',
-                    inventory: []
+                    inventory: [],
+                    completedAt: null 
                 }
             ]
         };
 
-        // 6. 写回数据库
         writeDB(db);
 
-        // 7. 准备响应数据
         const responseData = {
             sessionId: sessionId,
             playerId: playerId,
@@ -114,7 +94,6 @@ function create(req, res) {
             maxPlayers: 25,
             gameStatus: 'waiting'
         };
-        // 8. 保存 Session 并返回
         return saveSessionAndRespond(req, res, playerId, sessionId, responseData, 'success');
 
     } catch (error) {
@@ -132,9 +111,7 @@ function join(req, res) {
     try {
         const { sessionId, username, playerId } = req.body;
 
-        // ---------- 场景1：重连（带 playerId） ----------
         if (playerId) {
-            // 1.1 查找会话
             const db = readDB();
             const session = db.sessions[sessionId];
             if (!session) {
@@ -145,7 +122,6 @@ function join(req, res) {
                 });
             }
 
-            // 1.2 查找玩家
             const player = session.players.find(p => p.playerId === playerId);
             if (!player) {
                 return res.json({
@@ -155,16 +131,14 @@ function join(req, res) {
                 });
             }
 
-            // 1.3 恢复连接状态
             player.turnStatus = 'active';
             writeDB(db);
 
             socketService.broadcastGameEvent(sessionId, 'player_reconnected', {
                 playerId,
-                activePlayers: getPublicPlayerList(session)
+                activePlayers: buildPublicPlayerList(session)
             });
 
-            // 1.4 准备响应数据
             const responseData = {
                 sessionId: sessionId,
                 playerId: playerId,
@@ -173,12 +147,9 @@ function join(req, res) {
                 gameStatus: session.gameStatus
             };
 
-            // 1.5 恢复 Session 并返回
             return saveSessionAndRespond(req, res, playerId, sessionId, responseData, 'Reconnected successfully');
         }
 
-        // ---------- 场景2：新玩家加入 ----------
-        // 2.1 验证用户名
         if (!username || username.trim() === '') {
             return res.json({
                 code: 1001,
@@ -188,7 +159,6 @@ function join(req, res) {
         }
         const finalUsername = username.trim();
 
-        // 2.2 读取数据库
         const db = readDB();
         const session = db.sessions[sessionId];
 
@@ -200,7 +170,6 @@ function join(req, res) {
             });
         }
 
-        // 2.3 检查游戏状态（已开始或已结束不能加入）
         if (session.gameStatus !== 'waiting') {
             return res.json({
                 code: 2008,
@@ -209,7 +178,6 @@ function join(req, res) {
             });
         }
 
-        // 2.4 检查容量
         if (session.players.length >= session.maxPlayers) {
             return res.json({
                 code: 2001,
@@ -218,7 +186,6 @@ function join(req, res) {
             });
         }
 
-        // 2.5 检查用户名是否已被使用（同一房间内唯一）
         if (session.players.some(p => p.username === finalUsername)) {
             return res.json({
                 code: 2002,
@@ -227,7 +194,6 @@ function join(req, res) {
             });
         }
 
-        // 2.6 生成新玩家
         const newPlayerId = 'p' + generateId();
         const newPlayer = {
             playerId: newPlayerId,
@@ -235,7 +201,8 @@ function join(req, res) {
             currentTile: 0,
             tokenColor: getNextColor(session.players),
             turnStatus: 'active',
-            inventory: []
+            inventory: [],
+            completedAt: null  
         };
 
         session.players.push(newPlayer);
@@ -243,17 +210,15 @@ function join(req, res) {
 
         socketService.broadcastGameEvent(sessionId, 'player_joined', {
             playerId: newPlayerId,
-            activePlayers: getPublicPlayerList(session)
+            activePlayers: buildPublicPlayerList(session)
         });
 
-        // 2.7 准备响应数据
         const responseData = {
             sessionId: sessionId,
             playerId: newPlayerId,
             tokenColor: newPlayer.tokenColor
         };
 
-        // 2.8 保存 Session 并返回
         return saveSessionAndRespond(req, res, newPlayerId, sessionId, responseData, 'Joined successfully');
 
     } catch (error) {
@@ -271,11 +236,9 @@ function getState(req, res) {
     try {
         const { sessionId } = req.params;
 
-        // 1. 读取数据库
         const db = readDB();
         const session = db.sessions[sessionId];
 
-        // 2. 检查会话是否存在
         if (!session) {
             return res.json({
                 code: 2003,
@@ -284,22 +247,13 @@ function getState(req, res) {
             });
         }
 
-        // 3. 按 currentTile 降序排列玩家（用于排行榜展示）
-        const sortedPlayers = [...session.players].sort((a, b) => b.currentTile - a.currentTile);
-
-        // 4. 构建响应数据（只返回必要的公开信息）
         const responseData = {
             sessionId: session.sessionId,
             gameStatus: session.gameStatus,
             winnerId: session.winnerId || null,
             startedAt: session.startedAt || null,
             completedAt: session.completedAt || null,
-            activePlayers: sortedPlayers.map(p => ({
-                playerId: p.playerId,
-                username: p.username,
-                currentTile: p.currentTile,
-                tokenColor: p.tokenColor
-            }))
+            activePlayers: buildPublicPlayerList(session)
         };
 
         return res.json({
@@ -324,7 +278,6 @@ function start(req, res) {
         const playerId = req.session.playerId;
         const sessionId = req.session.sessionId;
 
-        // 1. 验证身份
         if (!playerId || !sessionId) {
             return res.json({
                 code: 2004,
@@ -333,7 +286,6 @@ function start(req, res) {
             });
         }
 
-        // 2. 读取数据库
         const db = readDB();
         const session = db.sessions[sessionId];
         if (!session) {
@@ -344,7 +296,6 @@ function start(req, res) {
             });
         }
 
-        // 3. 校验房主权限
         if (session.ownerId !== playerId) {
             return res.json({
                 code: 2009,
@@ -353,7 +304,6 @@ function start(req, res) {
             });
         }
 
-        // 4. 校验游戏状态
         if (session.gameStatus !== 'waiting') {
             return res.json({
                 code: 2008,
@@ -362,7 +312,6 @@ function start(req, res) {
             });
         }
 
-        // 5. 校验玩家数量（至少 2 名活跃玩家）
         const activePlayers = session.players.filter(p => p.turnStatus === 'active');
         if (activePlayers.length < 2) {
             return res.json({
@@ -372,7 +321,6 @@ function start(req, res) {
             });
         }
 
-        // 6. 更新游戏状态
         session.gameStatus = 'InProgress';
         session.startedAt = new Date().toISOString();
         writeDB(db);
@@ -384,7 +332,6 @@ function start(req, res) {
         });
         socketService.startSessionTimers(sessionId);
 
-        // 7. 返回响应
         return res.json({
             code: 0,
             data: {
@@ -412,7 +359,6 @@ function move(req, res) {
         const sessionId = req.session.sessionId;
         const { targetTile } = req.body;
 
-        // 1. 验证身份
         if (!playerId || !sessionId) {
             return res.json({
                 code: 2004,
@@ -421,7 +367,6 @@ function move(req, res) {
             });
         }
 
-        // 2. 读取数据库
         const db = readDB();
         const session = db.sessions[sessionId];
         if (!session) {
@@ -432,7 +377,6 @@ function move(req, res) {
             });
         }
 
-        // 3. 检查游戏状态
         if (session.gameStatus !== 'InProgress') {
             return res.json({
                 code: 2008,
@@ -450,9 +394,16 @@ function move(req, res) {
             });
         }
 
+        if (player.completedAt) {
+            return res.json({
+                code: 2020,
+                data: null,
+                msg: 'Player already finished the game'
+            });
+        }
+
         // ---------- 模式2：答题后移动（带 targetTile） ----------
         if (targetTile !== undefined) {
-            // 4. 校验 targetTile 范围
             if (typeof targetTile !== 'number' || targetTile < 1 || targetTile > 100) {
                 return res.json({
                     code: 2006,
@@ -461,44 +412,52 @@ function move(req, res) {
                 });
             }
 
-            // 5. 更新玩家位置
             player.currentTile = targetTile;
 
-            // 6. 检查胜利
-            let gameStatus = session.gameStatus;
-            let winnerId = session.winnerId;
             if (targetTile === 100) {
-                gameStatus = 'Completed';
-                winnerId = playerId;
-                session.gameStatus = gameStatus;
-                session.winnerId = winnerId;
-                session.completedAt = new Date().toISOString();
+                const result = applyPlayerFinish(session, player);
+                writeDB(db);
+                if (result.gameStatus === 'Completed') {
+                    socketService.broadcastGameEvent(sessionId, 'game_over', {
+                        winnerId: result.winnerId,
+                        activePlayers: buildPublicPlayerList(session)
+                    });
+                    socketService.stopSessionTimers(sessionId);
+                } else {
+                    socketService.broadcastGameEvent(sessionId, 'move_update', {
+                        playerId,
+                        currentTile: 100,
+                        activePlayers: buildPublicPlayerList(session)
+                    });
+                }
+                return res.json({
+                    code: 0,
+                    data: {
+                        currentTile: 100,
+                        needsQuiz: false,
+                        gameStatus: result.gameStatus,
+                        winnerId: result.winnerId,
+                        itemGranted: null,
+                        inventory: player.inventory || []
+                    },
+                    msg: result.gameStatus === 'Completed' ? '🎉 Game over!' : 'Player reached 100!'
+                });
             }
 
-            // 7. 写库
             writeDB(db);
-
             socketService.broadcastGameEvent(sessionId, 'move_update', {
                 playerId,
                 currentTile: targetTile,
-                activePlayers: getPublicPlayerList(session)
+                activePlayers: buildPublicPlayerList(session)
             });
-            if (gameStatus === 'Completed') {
-                socketService.broadcastGameEvent(sessionId, 'game_over', {
-                    winnerId,
-                    activePlayers: getPublicPlayerList(session)
-                });
-                socketService.stopSessionTimers(sessionId);
-            }
 
-            // 8. 返回响应
             return res.json({
                 code: 0,
                 data: {
                     currentTile: targetTile,
                     needsQuiz: false,
-                    gameStatus: gameStatus,
-                    winnerId: winnerId,
+                    gameStatus: session.gameStatus,
+                    winnerId: session.winnerId,
                     itemGranted: null,
                     inventory: player.inventory || []
                 },
@@ -507,13 +466,10 @@ function move(req, res) {
         }
 
         // ---------- 模式1：掷骰子 ----------
-        // 4. 掷骰子
         const diceValue = gameLogic.generateDiceValue();
         const landingTile = gameLogic.calculateLandingTile(player.currentTile, diceValue);
 
-        // 5. 处理超出棋盘
         if (landingTile > 100) {
-            // 超出终点，位置不变
             return res.json({
                 code: 0,
                 data: {
@@ -529,53 +485,55 @@ function move(req, res) {
             });
         }
 
-        // 6. 检查落点类型
         const tileType = gameLogic.getTileType(landingTile);
         const isFlashing = gameLogic.isFlashingTile(landingTile);
 
-        // 7. 更新玩家位置（先移动到落点）
         player.currentTile = landingTile;
+
         if (landingTile === 100) {
-            session.gameStatus = 'Completed';
-            session.winnerId = playerId;
-            session.completedAt = new Date().toISOString();
+            const result = applyPlayerFinish(session, player);
             writeDB(db);
-            socketService.broadcastGameEvent(sessionId, 'game_over', {
-                winnerId: playerId,
-                activePlayers: getPublicPlayerList(session)
-            });
-            socketService.stopSessionTimers(sessionId);
+            if (result.gameStatus === 'Completed') {
+                socketService.broadcastGameEvent(sessionId, 'game_over', {
+                    winnerId: result.winnerId,
+                    activePlayers: buildPublicPlayerList(session)
+                });
+                socketService.stopSessionTimers(sessionId);
+            } else {
+                socketService.broadcastGameEvent(sessionId, 'move_update', {
+                    playerId,
+                    currentTile: 100,
+                    activePlayers: buildPublicPlayerList(session)
+                });
+            }
             return res.json({
                 code: 0,
                 data: {
                     currentTile: 100,
                     needsQuiz: false,
-                    gameStatus: 'Completed',
-                    winnerId: playerId,
+                    gameStatus: result.gameStatus,
+                    winnerId: result.winnerId,
                     itemGranted: null,
                     inventory: player.inventory || [],
                     diceValue: diceValue
                 },
-                msg: '🎉 Player reached tile 100 and won the game!'
+                msg: result.gameStatus === 'Completed' ? '🎉 Game over!' : 'Player reached 100!'
             });
         }
 
-        // 8. 处理蛇梯（需要答题）
         if (tileType === 'ladder' || tileType === 'snake') {
-            // 写入数据库（位置已更新到蛇/梯起点）
             writeDB(db);
-
             socketService.broadcastGameEvent(sessionId, 'move_update', {
                 playerId,
                 currentTile: landingTile,
-                activePlayers: getPublicPlayerList(session)
+                activePlayers: buildPublicPlayerList(session)
             });
 
             return res.json({
                 code: 0,
                 data: {
                     currentTile: landingTile,
-                    needsQuiz: true,         // 前端弹出答题
+                    needsQuiz: true,
                     gameStatus: session.gameStatus,
                     winnerId: session.winnerId,
                     itemGranted: null,
@@ -586,16 +544,13 @@ function move(req, res) {
             });
         }
 
-        // 9. 处理闪光格
         let itemGranted = null;
-        let needsQuiz = false;
         let finalTile = landingTile;
 
         if (isFlashing) {
             const effect = gameLogic.getFlashingTileEffect(landingTile, session.presets);
             if (effect.type === 'item') {
                 itemGranted = effect.item;
-                // 写入 inventory
                 if (!player.inventory) player.inventory = [];
                 if (player.inventory.length < 3) {
                     player.inventory.push(itemGranted);
@@ -607,7 +562,7 @@ function move(req, res) {
                 socketService.broadcastGameEvent(sessionId, 'move_update', {
                     playerId,
                     currentTile: finalTile,
-                    activePlayers: getPublicPlayerList(session)
+                    activePlayers: buildPublicPlayerList(session)
                 });
                 return res.json({
                     code: 0,
@@ -623,19 +578,15 @@ function move(req, res) {
                     msg: `Landed on red flashing tile, moved back ${effect.steps} tiles`
                 });
             }
-            // effect.type === 'nothing' → 无效果，继续正常流程
         }
 
-        // 10. 写库
         writeDB(db);
-
         socketService.broadcastGameEvent(sessionId, 'move_update', {
             playerId,
             currentTile: landingTile,
-            activePlayers: getPublicPlayerList(session)
+            activePlayers: buildPublicPlayerList(session)
         });
 
-        // 11. 返回响应
         return res.json({
             code: 0,
             data: {
@@ -659,6 +610,7 @@ function move(req, res) {
         });
     }
 }
+
 // ---------- POST /api/game/item/use ----------
 function useItem(req, res) {
     try {
@@ -666,7 +618,6 @@ function useItem(req, res) {
         const sessionId = req.session.sessionId;
         const { itemType, targetPlayerId } = req.body;
 
-        // 1. 验证身份
         if (!playerId || !sessionId) {
             return res.json({
                 code: 2004,
@@ -675,7 +626,6 @@ function useItem(req, res) {
             });
         }
 
-        // 2. 验证 itemType
         if (!itemType || !['rocket', 'bomb'].includes(itemType)) {
             return res.json({
                 code: 1003,
@@ -684,7 +634,6 @@ function useItem(req, res) {
             });
         }
 
-        // 3. 读取数据库
         const db = readDB();
         const session = db.sessions[sessionId];
         if (!session) {
@@ -695,7 +644,6 @@ function useItem(req, res) {
             });
         }
 
-        // 4. 检查游戏状态
         if (session.gameStatus !== 'InProgress') {
             return res.json({
                 code: 2008,
@@ -704,7 +652,6 @@ function useItem(req, res) {
             });
         }
 
-        // 5. 查找玩家
         const player = session.players.find(p => p.playerId === playerId);
         if (!player) {
             return res.json({
@@ -714,7 +661,14 @@ function useItem(req, res) {
             });
         }
 
-        // 6. 检查道具是否存在
+        if (player.completedAt) {
+            return res.json({
+                code: 2020,
+                data: null,
+                msg: 'Player already finished the game'
+            });
+        }
+
         if (!player.inventory || !player.inventory.includes(itemType)) {
             return res.json({
                 code: 2011,
@@ -723,7 +677,6 @@ function useItem(req, res) {
             });
         }
 
-        // 7. 从预设获取道具步数
         const steps = gameLogic.getItemSteps(itemType, session.presets);
         if (steps === null) {
             return res.json({
@@ -733,7 +686,6 @@ function useItem(req, res) {
             });
         }
 
-        // 8. 如果是炸弹，验证目标
         let targetPlayer = null;
         if (itemType === 'bomb') {
             if (!targetPlayerId) {
@@ -758,9 +710,15 @@ function useItem(req, res) {
                     msg: 'Target player not found'
                 });
             }
+            if (targetPlayer.completedAt) {
+                return res.json({
+                    code: 2012,
+                    data: null,
+                    msg: 'Target player has already finished'
+                });
+            }
         }
 
-        // 9. 应用效果
         let sourceNewTile = player.currentTile;
         let targetNewTile = null;
 
@@ -772,41 +730,51 @@ function useItem(req, res) {
             targetPlayer.currentTile = targetNewTile;
         }
 
-        // 10. 从库存移除道具
         const index = player.inventory.indexOf(itemType);
         if (index !== -1) {
             player.inventory.splice(index, 1);
         }
 
-        // 11. 检查是否有人到达终点（火箭可能触发胜利）
-        let gameStatus = session.gameStatus;
-        let winnerId = session.winnerId;
         if (itemType === 'rocket' && sourceNewTile === 100) {
-            gameStatus = 'Completed';
-            winnerId = playerId;
-            session.gameStatus = gameStatus;
-            session.winnerId = winnerId;
-            session.completedAt = new Date().toISOString();
+            const result = applyPlayerFinish(session, player);
+            writeDB(db);
+            if (result.gameStatus === 'Completed') {
+                socketService.broadcastGameEvent(sessionId, 'game_over', {
+                    winnerId: result.winnerId,
+                    activePlayers: buildPublicPlayerList(session)
+                });
+                socketService.stopSessionTimers(sessionId);
+            } else {
+                socketService.broadcastGameEvent(sessionId, 'move_update', {
+                    playerId,
+                    currentTile: 100,
+                    activePlayers: buildPublicPlayerList(session)
+                });
+            }
+            return res.json({
+                code: 0,
+                data: {
+                    effect: 'self_forward',
+                    movedBy: steps,
+                    inventory: player.inventory,
+                    sourcePlayerId: playerId,
+                    sourceNewTile: 100,
+                    gameStatus: result.gameStatus,
+                    winnerId: result.winnerId
+                },
+                msg: result.gameStatus === 'Completed' ? '🎉 Rocket reached 100, game over!' : 'Rocket used, reached 100!'
+            });
         }
 
-        // 12. 写库
         writeDB(db);
 
         socketService.broadcastGameEvent(sessionId, 'item_used', {
             itemType,
             sourcePlayerId: playerId,
             targetPlayerId: targetPlayerId || null,
-            activePlayers: getPublicPlayerList(session)
+            activePlayers: buildPublicPlayerList(session)
         });
-        if (gameStatus === 'Completed') {
-            socketService.broadcastGameEvent(sessionId, 'game_over', {
-                winnerId,
-                activePlayers: getPublicPlayerList(session)
-            });
-            socketService.stopSessionTimers(sessionId);
-        }
 
-        // 13. 构造响应
         let responseData = {
             effect: itemType === 'rocket' ? 'self_forward' : 'target_backward',
             movedBy: steps,
@@ -847,7 +815,6 @@ function disconnect(req, res) {
     try {
         const { sessionId, playerId } = req.body;
 
-        // 1. 验证必要字段
         if (!sessionId || !playerId) {
             return res.json({
                 code: 1001,
@@ -856,7 +823,6 @@ function disconnect(req, res) {
             });
         }
 
-        // 2. 读取数据库
         const db = readDB();
         const session = db.sessions[sessionId];
 
@@ -868,7 +834,6 @@ function disconnect(req, res) {
             });
         }
 
-        // 3. 查找玩家
         const player = session.players.find(p => p.playerId === playerId);
         if (!player) {
             return res.json({
@@ -878,7 +843,6 @@ function disconnect(req, res) {
             });
         }
 
-        // 4. 如果已经是 inactive，直接返回成功（幂等）
         if (player.turnStatus === 'inactive') {
             return res.json({
                 code: 0,
@@ -890,16 +854,14 @@ function disconnect(req, res) {
             });
         }
 
-        // 5. 标记为 inactive
         player.turnStatus = 'inactive';
         writeDB(db);
 
         socketService.broadcastGameEvent(sessionId, 'player_disconnected', {
             playerId,
-            activePlayers: getPublicPlayerList(session)
+            activePlayers: buildPublicPlayerList(session)
         });
 
-        // 6. 返回响应
         return res.json({
             code: 0,
             data: {
