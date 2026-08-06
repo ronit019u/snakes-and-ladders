@@ -86,11 +86,10 @@ async function handleStart() {
   if (!sessionId) return showMsg('setup-msg', 'Create a room first', false);
   const r = await GameAPI.start();
   showMsg('setup-msg', r.msg, r.code === 0);
-  if (r.code === 0) {
-    $('board-card').classList.remove('hidden');
-  }
+  // Don't touch board-card here — pollState() builds the board itself
+  // once it sees gameStatus flip to InProgress. Removing 'hidden' here
+  // early breaks pollState()'s own "is it still hidden?" check below.
 }
-
 // ---------- Poll state ----------
 async function pollState() {
   if (!sessionId) return;
