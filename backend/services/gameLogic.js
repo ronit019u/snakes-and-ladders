@@ -43,62 +43,93 @@ function calculateTargetTile(landingTile, isCorrect) {
 const DEFAULT_PRESET = {
   presetId: 'default',
   displayName: 'Default',
+  
+  maxPlayers: 25,
+  diceMax: 6,
+  quizTimeout: 15,
+  bonusTimeout: 15,
+  leaderboardDisplayCount: 5,
+  
   flashingTile: {
-    blueProb: 0.3,
-    redProb: 0.3,
+    blueProb: 30,
+    redProb: 30,
     blueEffect: {
       type: 'item',
-      itemTypes: ['rocket', 'bomb'],
-      itemProb: 0.5
+      itemProb: 50,
+      itemPool: [
+        { type: 'rocket', weight: 5 },
+        { type: 'bomb', weight: 3 },
+        { type: 'arrow', weight: 2 }
+      ]
     },
     redEffect: {
       type: 'penalty',
       penaltySteps: 2
     }
   },
+  
   earthquake: {
-    magnitude: 3,
-    interval: 60
+    interval: 60,
+    magnitude: 3
   },
+  
   bonus: {
     interval: 180,
-    forwardSteps: 5
+    rewards: [
+      { type: 'item', itemType: 'rocket', weight: 4 },
+      { type: 'item', itemType: 'bomb', weight: 2 },
+      { type: 'item', itemType: 'arrow', weight: 2 },
+      { type: 'forward', steps: 3, weight: 2 }
+    ],
+    penaltySteps: 2
   },
+  
   items: {
-    rocket: { enabled: true, steps: 3 },
-    bomb: { enabled: true, steps: 3 }
+    rocket: { enabled: true, steps: 5 },
+    bomb: { enabled: true, steps: 5 },
+    arrow: { enabled: true, steps: 3 }
   }
 };
-
 
 // ---------- Get preset with default fallback ----------
 function getPreset(preset) {
   if (!preset) return JSON.parse(JSON.stringify(DEFAULT_PRESET));
-
+  
   return {
     presetId: preset.presetId || 'custom',
     displayName: preset.displayName || 'Custom',
+    
+    maxPlayers: preset.maxPlayers ?? DEFAULT_PRESET.maxPlayers,
+    diceMax: preset.diceMax ?? DEFAULT_PRESET.diceMax,
+    quizTimeout: preset.quizTimeout ?? DEFAULT_PRESET.quizTimeout,
+    bonusTimeout: preset.bonusTimeout ?? DEFAULT_PRESET.bonusTimeout,
+    leaderboardDisplayCount: preset.leaderboardDisplayCount ?? DEFAULT_PRESET.leaderboardDisplayCount,
+    
     flashingTile: {
       blueProb: preset.flashingTile?.blueProb ?? DEFAULT_PRESET.flashingTile.blueProb,
       redProb: preset.flashingTile?.redProb ?? DEFAULT_PRESET.flashingTile.redProb,
       blueEffect: {
         type: preset.flashingTile?.blueEffect?.type ?? DEFAULT_PRESET.flashingTile.blueEffect.type,
-        itemTypes: preset.flashingTile?.blueEffect?.itemTypes ?? DEFAULT_PRESET.flashingTile.blueEffect.itemTypes,
-        itemProb: preset.flashingTile?.blueEffect?.itemProb ?? DEFAULT_PRESET.flashingTile.blueEffect.itemProb
+        itemProb: preset.flashingTile?.blueEffect?.itemProb ?? DEFAULT_PRESET.flashingTile.blueEffect.itemProb,
+        itemPool: preset.flashingTile?.blueEffect?.itemPool ?? DEFAULT_PRESET.flashingTile.blueEffect.itemPool
       },
       redEffect: {
         type: preset.flashingTile?.redEffect?.type ?? DEFAULT_PRESET.flashingTile.redEffect.type,
         penaltySteps: preset.flashingTile?.redEffect?.penaltySteps ?? DEFAULT_PRESET.flashingTile.redEffect.penaltySteps
       }
     },
+    
     earthquake: {
-      magnitude: preset.earthquake?.magnitude ?? DEFAULT_PRESET.earthquake.magnitude,
-      interval: preset.earthquake?.interval ?? DEFAULT_PRESET.earthquake.interval
+      interval: preset.earthquake?.interval ?? DEFAULT_PRESET.earthquake.interval,
+      magnitude: preset.earthquake?.magnitude ?? DEFAULT_PRESET.earthquake.magnitude
     },
+    
     bonus: {
       interval: preset.bonus?.interval ?? DEFAULT_PRESET.bonus.interval,
-      forwardSteps: preset.bonus?.forwardSteps ?? DEFAULT_PRESET.bonus.forwardSteps
+      rewards: preset.bonus?.rewards ?? DEFAULT_PRESET.bonus.rewards,
+      penaltySteps: preset.bonus?.penaltySteps ?? DEFAULT_PRESET.bonus.penaltySteps
     },
+    
     items: {
       rocket: {
         enabled: preset.items?.rocket?.enabled ?? DEFAULT_PRESET.items.rocket.enabled,
@@ -107,9 +138,27 @@ function getPreset(preset) {
       bomb: {
         enabled: preset.items?.bomb?.enabled ?? DEFAULT_PRESET.items.bomb.enabled,
         steps: preset.items?.bomb?.steps ?? DEFAULT_PRESET.items.bomb.steps
+      },
+      arrow: {
+        enabled: preset.items?.arrow?.enabled ?? DEFAULT_PRESET.items.arrow.enabled,
+        steps: preset.items?.arrow?.steps ?? DEFAULT_PRESET.items.arrow.steps
       }
     }
   };
+}
+
+// gameLogic.js
+
+function pickByWeight(pool) {
+  if (!pool || pool.length === 0) return null;
+  const total = pool.reduce((sum, item) => sum + (item.weight || 0), 0);
+  if (total === 0) return pool[0];
+  let rand = Math.random() * total;
+  for (const item of pool) {
+    rand -= (item.weight || 0);
+    if (rand <= 0) return item;
+  }
+  return pool[pool.length - 1];
 }
 
 
@@ -154,40 +203,60 @@ function isFlashingTile(tile) {
 // Get flashing tile effect from preset
 function getFlashingTileEffect(tile, preset) {
   const config = getPreset(preset);
-  const rand = Math.random();
+  const rand = Math.random() * 100;
   const { blueProb, redProb, blueEffect, redEffect } = config.flashingTile;
 
   if (rand < blueProb) {
-    // Blue flash: may grant an item
-    const hasItem = Math.random() < blueEffect.itemProb;
+    // 蓝格：是否给道具
+    const hasItem = Math.random() * 100 < blueEffect.itemProb;
     if (hasItem) {
-      const availableItems = blueEffect.itemTypes.filter(type => {
-        const itemConfig = config.items[type];
+      // 从 itemPool 按权重抽取
+      const pool = blueEffect.itemPool || [];
+      // 过滤掉未启用的道具
+      const availablePool = pool.filter(item => {
+        const itemConfig = config.items[item.type];
         return itemConfig && itemConfig.enabled;
       });
-      if (availableItems.length > 0) {
-        const selected = availableItems[Math.floor(Math.random() * availableItems.length)];
-        return { type: 'item', item: selected };
+      if (availablePool.length > 0) {
+        const selected = pickByWeight(availablePool);
+        if (selected) return { type: 'item', item: selected.type };
       }
     }
     return { type: 'nothing' };
   } else if (rand < blueProb + redProb) {
-    // Red flash: penalty
+    // 红格：惩罚
     return { type: 'penalty', steps: redEffect.penaltySteps };
   }
-
   return { type: 'nothing' };
 }
-
 // ---------- Bonus reward system ----------
 function getBonusReward(preset) {
   const config = getPreset(preset);
-  // Supported bonus types: forward_boost and item_grant.
-  // The reward content is read from the session preset; default values apply if not defined.
-  return {
-    type: config.bonus?.type || 'forward_boost',
-    value: config.bonus?.forwardSteps || 5
-  };
+  const rewards = config.bonus.rewards || [];
+  
+  // 过滤出有效的奖励（如果是道具，检查是否启用）
+  const availableRewards = rewards.filter(r => {
+    if (r.type === 'item') {
+      const itemConfig = config.items[r.itemType];
+      return itemConfig && itemConfig.enabled;
+    }
+    return true; // forward 类型始终有效
+  });
+  
+  if (availableRewards.length === 0) {
+    // 兜底：给个默认前进
+    return { type: 'forward', steps: 3 };
+  }
+  
+  const selected = pickByWeight(availableRewards);
+  if (selected.type === 'item') {
+    return { type: 'item_grant', value: selected.itemType };
+  } else if (selected.type === 'forward') {
+    return { type: 'forward_boost', value: selected.steps || 3 };
+  }
+  
+  // 兜底
+  return { type: 'forward_boost', value: 3 };
 }
 
 

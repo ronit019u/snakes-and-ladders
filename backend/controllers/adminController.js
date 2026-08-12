@@ -273,19 +273,52 @@ function uploadQuestions(req, res) {
             });
         }
 
-        // ---------- 替换模式：完全替换现有题库 ----------
-        db.questions = newQuestions;
-        writeDB(db);
+        // [CHANGED] 默认改为 append（追加），防止误覆盖
+        const mode = req.body?.mode || 'append'; // 'append' 或 'replace'
 
-        return res.json({
-            code: 0,
-            data: {
-                uploaded: newQuestions.length,
-                totalQuestions: db.questions.length,
-                message: `Successfully replaced question bank with ${newQuestions.length} questions`
-            },
-            msg: `Successfully uploaded ${newQuestions.length} questions (replaced existing bank)`
-        });
+        if (mode === 'append') {
+            // ---------- 追加模式（默认） ----------
+            const maxId = db.questions.reduce((max, q) => {
+                const num = parseInt(q.questionId.replace('Q', ''));
+                return num > max ? num : max;
+            }, 0);
+
+            newQuestions.forEach((q, index) => {
+                q.questionId = 'Q' + String(maxId + index + 1).padStart(3, '0');
+            });
+
+            db.questions.push(...newQuestions);
+
+            return res.json({
+                code: 0,
+                data: {
+                    uploaded: newQuestions.length,
+                    totalQuestions: db.questions.length,
+                    mode: 'append',
+                    message: `Successfully appended ${newQuestions.length} questions`
+                },
+                msg: `Successfully appended ${newQuestions.length} questions (total: ${db.questions.length})`
+            });
+
+        } else {
+            // ---------- 替换模式 ----------
+            newQuestions.forEach((q, index) => {
+                q.questionId = 'Q' + String(index + 1).padStart(3, '0');
+            });
+
+            db.questions = newQuestions;
+
+            return res.json({
+                code: 0,
+                data: {
+                    uploaded: newQuestions.length,
+                    totalQuestions: db.questions.length,
+                    mode: 'replace',
+                    message: `Successfully replaced question bank with ${newQuestions.length} questions`
+                },
+                msg: `Successfully uploaded ${newQuestions.length} questions (replaced existing bank)`
+            });
+        }
 
     } catch (error) {
         console.error('[Upload Questions Error]', error);

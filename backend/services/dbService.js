@@ -6,6 +6,8 @@ const path = require('path');
 const DB_PATH = path.join(__dirname, '../db.json');
 
 // 默认数据结构（第一次运行时自动创建）
+// services/dbService.js
+
 const defaultDB = {
   sessions: {},
   questions: [
@@ -25,30 +27,51 @@ const defaultDB = {
     "default": {
       "presetId": "default",
       "displayName": "Default",
+      
+      "maxPlayers": 25,
+      "diceMax": 6,
+      "quizTimeout": 15,
+      "bonusTimeout": 15,
+      "leaderboardDisplayCount": 5,
+      
       "flashingTile": {
-        "blueProb": 0.3,
-        "redProb": 0.3,
+        "blueProb": 30,
+        "redProb": 30,
         "blueEffect": {
           "type": "item",
-          "itemTypes": ["rocket", "bomb"],
-          "itemProb": 0.5
+          "itemProb": 50,
+          "itemPool": [
+            { "type": "rocket", "weight": 5 },
+            { "type": "bomb", "weight": 5 },
+            { "type": "arrow", "weight": 2 }
+          ]
         },
         "redEffect": {
           "type": "penalty",
           "penaltySteps": 2
         }
       },
+      
       "earthquake": {
-        "magnitude": 3,
         "interval": 60,
+        "magnitude": 3
       },
+      
       "bonus": {
         "interval": 180,
-        "forwardSteps": 5
+        "rewards": [
+          { "type": "item", "itemType": "rocket", "weight": 4 },
+          { "type": "item", "itemType": "bomb", "weight": 2 },
+          { "type": "item", "itemType": "arrow", "weight": 2 },
+          { "type": "forward", "steps": 3, "weight": 2 }
+        ],
+        "penaltySteps": 2
       },
+      
       "items": {
-        "rocket": { "enabled": true, "steps": 3 },
-        "bomb": { "enabled": true, "steps": 3 }
+        "rocket": { "enabled": true, "steps": 5 },
+        "bomb": { "enabled": true, "steps": 5 },
+        "arrow": { "enabled": true, "steps": 3 }
       }
     }
   }

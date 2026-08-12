@@ -1,3 +1,83 @@
+Changelog – 2026-08-13
+
+Preset system overhaul:
+Added new preset fields: maxPlayers, diceMax, quizTimeout, bonusTimeout, leaderboardDisplayCount
+
+Converted flashing tile probabilities from decimals to integer percentages (0-100)
+
+Replaced blueEffect.itemTypes with weighted itemPool supporting rocket, bomb, arrow
+
+Replaced bonus.forwardSteps with weighted bonus.rewards supporting both item and forward reward types
+
+Added bonus.penaltySteps for wrong answer penalty in bonus rounds
+
+Added items.arrow configuration for the new arrow item
+
+Added pickByWeight utility function for weighted random selection
+
+Updated getFlashingTileEffect to use weighted itemPool
+
+Updated getBonusReward to use weighted rewards pool
+
+Updated getPreset to fill all new default values
+
+Player finish logic (3 players to end game):
+
+Implemented applyPlayerFinish in playerHelpers.js: game ends when 3 players reach tile 100
+
+Added completedAt field to track each player's finish time
+
+winnerId now records the first player to finish (sorted by completedAt)
+
+Added completedAt checks to block finished players from moving, using items, answering questions, or participating in bonus rounds
+
+10-multiple tile bonus trigger:
+
+Added triggeredBonusTiles to session schema to track which 10-multiple groups (10,20,...,90) have been triggered
+
+Added checkTileBonusTrigger in playerHelpers.js to fire a bonus round when a player lands on an untriggered 10-multiple group
+
+Integrated check in gameController.move (dice, quiz, rocket) and useItem after valid moves
+
+New item: Arrow:
+
+Added arrow to supported item types in useItem
+
+Arrow functions like bomb: select a target player to move them backward by preset steps
+
+Game state response:
+
+GET /api/game/state/:sessionId now returns leaderboardDisplayCount instead of the full presets object
+
+activePlayers now includes completedAt field via buildPublicPlayerList
+
+Question upload:
+
+Added mode parameter: append (default) or replace
+
+Appending automatically continues numbering from the highest existing question ID
+
+Bonus controller improvements:
+
+Split startBonusRoundLogicOnly (no write) and startBonusRoundLogic (writes) to fix write consistency
+
+Added wrong answer penalty: player moves back by bonus.penaltySteps (default 2)
+
+Removed unused gameStatus and winnerId variables in submitBonusAnswer
+
+Socket service:
+
+Exported scheduleBonusExpiry for use by checkTileBonusTrigger
+
+Bug fixes:
+
+Fixed adminCreateRoom preset loading to use getPreset() for default field filling
+
+Fixed question upload crash when req.body is undefined (added optional chaining)
+
+Removed unused tileType parameter from calculateTargetTile
+
+
 Changelog – 2026-08-06
 
 Added 10-multiple tile bonus trigger: introduced session.triggeredBonusTiles to track triggered tiles (10,20,...,90) per session; added checkTileBonusTrigger in playerHelpers.js to fire a bonus round when a player lands on a tile whose 10-multiple group hasn't been triggered; integrated the check in gameController.move (dice, quiz, rocket) and useItem after valid moves.

@@ -199,12 +199,14 @@ function submitBonusAnswer(req, res) {
         const isCorrect = selectedOption === question.correctAnswer;
 
         if (!isCorrect) {
+            // 扣分惩罚：后退2步
+            const penalty = session.presets?.bonus?.penaltySteps || 2;
+            player.currentTile = Math.max(1, player.currentTile - penalty);
+            writeDB(db);
             return res.json({
                 code: 0,
-                data: {
-                    correct: false
-                },
-                msg: 'Incorrect answer'
+                data: { correct: false, penalty: penalty },
+                msg: `Incorrect answer, moved back ${penalty} steps`
             });
         }
 

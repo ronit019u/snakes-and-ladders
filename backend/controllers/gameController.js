@@ -255,7 +255,8 @@ function getState(req, res) {
             winnerId: session.winnerId || null,
             startedAt: session.startedAt || null,
             completedAt: session.completedAt || null,
-            activePlayers: buildPublicPlayerList(session)
+            activePlayers: buildPublicPlayerList(session),
+            leaderboardDisplayCount: session.presets?.leaderboardDisplayCount || 5
         };
 
         return res.json({
@@ -630,11 +631,12 @@ function useItem(req, res) {
             });
         }
 
-        if (!itemType || !['rocket', 'bomb'].includes(itemType)) {
+        // [MODIFIED] 允许 arrow
+        if (!itemType || !['rocket', 'bomb', 'arrow'].includes(itemType)) {
             return res.json({
                 code: 1003,
                 data: null,
-                msg: 'Invalid item type, must be rocket or bomb'
+                msg: 'Invalid item type, must be rocket, bomb, or arrow'
             });
         }
 
@@ -691,19 +693,20 @@ function useItem(req, res) {
         }
 
         let targetPlayer = null;
-        if (itemType === 'bomb') {
+        // [MODIFIED] 炸弹和箭都需要指定目标
+        if (itemType === 'bomb' || itemType === 'arrow') {
             if (!targetPlayerId) {
                 return res.json({
                     code: 1001,
                     data: null,
-                    msg: 'Missing targetPlayerId for bomb'
+                    msg: 'Missing targetPlayerId for this item'
                 });
             }
             if (targetPlayerId === playerId) {
                 return res.json({
                     code: 2012,
                     data: null,
-                    msg: 'Cannot bomb yourself'
+                    msg: 'Cannot target yourself'
                 });
             }
             targetPlayer = session.players.find(p => p.playerId === targetPlayerId);
@@ -729,16 +732,19 @@ function useItem(req, res) {
         if (itemType === 'rocket') {
             sourceNewTile = Math.min(100, player.currentTile + steps);
             player.currentTile = sourceNewTile;
-        } else if (itemType === 'bomb') {
+        } else if (itemType === 'bomb' || itemType === 'arrow') {
+            // [MODIFIED] 炸弹和箭都后退
             targetNewTile = Math.max(1, targetPlayer.currentTile - steps);
             targetPlayer.currentTile = targetNewTile;
         }
 
+        // 从库存移除道具（所有类型通用）
         const index = player.inventory.indexOf(itemType);
         if (index !== -1) {
             player.inventory.splice(index, 1);
         }
 
+        // 火箭到达100的胜利判定
         if (itemType === 'rocket' && sourceNewTile === 100) {
             const result = applyPlayerFinish(session, player);
             writeDB(db);
@@ -769,7 +775,12 @@ function useItem(req, res) {
                 msg: result.gameStatus === 'Completed' ? '🎉 Rocket reached 100, game over!' : 'Rocket used, reached 100!'
             });
         }
-        checkTileBonusTrigger(session, player, sessionId, socketService, bonusController);
+
+        // 检查是否触发10倍数奖励（仅火箭主动移动触发，炸弹/箭不触发）
+        if (itemType === 'rocket') {
+            checkTileBonusTrigger(session, player, sessionId, socketService, bonusController);
+        }
+
         writeDB(db);
 
         socketService.broadcastGameEvent(sessionId, 'item_used', {
@@ -788,7 +799,7 @@ function useItem(req, res) {
         if (itemType === 'rocket') {
             responseData.sourcePlayerId = playerId;
             responseData.sourceNewTile = sourceNewTile;
-        } else if (itemType === 'bomb') {
+        } else if (itemType === 'bomb' || itemType === 'arrow') {
             responseData.sourcePlayerId = playerId;
             responseData.targetPlayerId = targetPlayerId;
             responseData.targetNewTile = targetNewTile;
@@ -796,7 +807,7 @@ function useItem(req, res) {
 
         const msg = itemType === 'rocket'
             ? `Rocket used, moved forward ${steps} tiles`
-            : `Bomb used, target moved backward ${steps} tiles`;
+            : `${itemType === 'bomb' ? 'Bomb' : 'Arrow'} used, target moved backward ${steps} tiles`;
 
         return res.json({
             code: 0,
