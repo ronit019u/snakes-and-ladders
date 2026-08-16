@@ -35,11 +35,11 @@ const defaultDB = {
       "leaderboardDisplayCount": 5,
       
       "flashingTile": {
-        "blueProb": 30,
-        "redProb": 30,
+        "blueProb": 80,
+        "redProb": 20,
         "blueEffect": {
           "type": "item",
-          "itemProb": 50,
+          "itemProb": 100,
           "itemPool": [
             { "type": "rocket", "weight": 5 },
             { "type": "bomb", "weight": 5 },

@@ -51,11 +51,11 @@ const DEFAULT_PRESET = {
   leaderboardDisplayCount: 5,
   
   flashingTile: {
-    blueProb: 30,
-    redProb: 30,
+    blueProb: 100,
+    redProb: 0,
     blueEffect: {
       type: 'item',
-      itemProb: 50,
+      itemProb: 100,
       itemPool: [
         { type: 'rocket', weight: 5 },
         { type: 'bomb', weight: 3 },
