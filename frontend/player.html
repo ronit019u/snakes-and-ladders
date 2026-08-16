@@ -79,12 +79,23 @@
     </div>
   </div>
 
-  <!-- ===== BOMB TARGET OVERLAY ===== -->
+  <!-- ===== ITEM TARGET OVERLAY (bomb / arrow) ===== -->
   <div class="overlay" id="target-overlay">
     <div class="modal">
-      <div style="font-weight:700;margin-bottom:8px;">💣 Select a target</div>
+      <div id="target-title" style="font-weight:700;margin-bottom:8px;">💣 Select a target</div>
       <div class="target-list" id="target-list"></div>
       <button class="btn-secondary" id="target-cancel-btn">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ===== BONUS ROUND OVERLAY ===== -->
+  <div class="overlay" id="bonus-overlay">
+    <div class="modal">
+      <div style="font-size:11px;color:#94a3b8;">⚡ Bonus Round — first correct answer wins!</div>
+      <div class="quiz-timer" id="bonus-timer">15</div>
+      <div id="bonus-question" style="font-weight:700;margin-bottom:6px;"></div>
+      <div id="bonus-options"></div>
+      <div id="bonus-result" style="margin-top:10px;font-weight:700;"></div>
     </div>
   </div>
 

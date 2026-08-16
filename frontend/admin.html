@@ -60,16 +60,59 @@
         <h2>Session Presets</h2>
         <label>Preset ID (save as)</label>
         <input type="text" id="preset-id-input" value="my_preset">
+        <label>Display Name</label>
+        <input type="text" id="p-display-name" value="My Preset">
+
+        <h3 style="margin:14px 0 6px;font-size:13px;color:#94a3b8;">Base Settings</h3>
         <div class="preset-grid">
-          <div><label>Blue Tile Prob</label><input type="number" id="p-blue" value="0.3" step="0.1" min="0" max="1"></div>
-          <div><label>Red Tile Prob</label><input type="number" id="p-red" value="0.3" step="0.1" min="0" max="1"></div>
-          <div><label>Item Prob (blue)</label><input type="number" id="p-item" value="0.5" step="0.1" min="0" max="1"></div>
-          <div><label>Red Penalty Steps</label><input type="number" id="p-penalty" value="2"></div>
-          <div><label>Earthquake Magnitude</label><input type="number" id="p-quake-mag" value="3"></div>
-          <div><label>Earthquake Interval (s)</label><input type="number" id="p-quake-int" value="60"></div>
-          <div><label>Bonus Interval (s)</label><input type="number" id="p-bonus-int" value="180"></div>
-          <div><label>Bonus Forward Steps</label><input type="number" id="p-bonus-steps" value="5"></div>
+          <div><label>Max Players</label><input type="number" id="p-max-players" value="25"></div>
+          <div><label>Dice Max</label><input type="number" id="p-dice-max" value="6"></div>
+          <div><label>Quiz Timeout (s)</label><input type="number" id="p-quiz-timeout" value="15"></div>
+          <div><label>Bonus Timeout (s)</label><input type="number" id="p-bonus-timeout" value="15"></div>
+          <div><label>Leaderboard Rows</label><input type="number" id="p-leaderboard-count" value="5"></div>
         </div>
+
+        <h3 style="margin:14px 0 6px;font-size:13px;color:#94a3b8;">Flashing Tile</h3>
+        <div class="preset-grid">
+          <div><label>Blue Tile Prob (%)</label><input type="number" id="p-blue" value="30" min="0" max="100"></div>
+          <div><label>Red Tile Prob (%)</label><input type="number" id="p-red" value="30" min="0" max="100"></div>
+          <div><label>Item Prob on Blue (%)</label><input type="number" id="p-item" value="50" min="0" max="100"></div>
+          <div><label>Red Penalty Steps</label><input type="number" id="p-penalty" value="2"></div>
+        </div>
+        <label style="margin-top:8px;">Blue-tile Item Pool (weights)</label>
+        <div class="preset-grid">
+          <div><label>🚀 Rocket</label><input type="number" id="p-pool-rocket" value="5"></div>
+          <div><label>💣 Bomb</label><input type="number" id="p-pool-bomb" value="3"></div>
+          <div><label>🏹 Arrow</label><input type="number" id="p-pool-arrow" value="2"></div>
+        </div>
+
+        <h3 style="margin:14px 0 6px;font-size:13px;color:#94a3b8;">Earthquake</h3>
+        <div class="preset-grid">
+          <div><label>Magnitude (steps)</label><input type="number" id="p-quake-mag" value="3"></div>
+          <div><label>Interval (s)</label><input type="number" id="p-quake-int" value="60"></div>
+        </div>
+
+        <h3 style="margin:14px 0 6px;font-size:13px;color:#94a3b8;">Bonus Round</h3>
+        <div class="preset-grid">
+          <div><label>Interval (s)</label><input type="number" id="p-bonus-int" value="180"></div>
+          <div><label>Wrong-Answer Penalty Steps</label><input type="number" id="p-bonus-penalty" value="2"></div>
+        </div>
+        <label style="margin-top:8px;">Reward Pool (weights)</label>
+        <div class="preset-grid">
+          <div><label>🚀 Rocket</label><input type="number" id="p-reward-rocket" value="4"></div>
+          <div><label>💣 Bomb</label><input type="number" id="p-reward-bomb" value="2"></div>
+          <div><label>🏹 Arrow</label><input type="number" id="p-reward-arrow" value="2"></div>
+          <div><label>➡️ Forward</label><input type="number" id="p-reward-forward" value="2"></div>
+        </div>
+        <div><label>Forward Reward Steps</label><input type="number" id="p-bonus-forward-steps" value="3"></div>
+
+        <h3 style="margin:14px 0 6px;font-size:13px;color:#94a3b8;">Items</h3>
+        <div class="preset-grid">
+          <div><label><input type="checkbox" id="p-item-rocket-enabled" checked style="width:auto;display:inline-block;margin-right:6px;">🚀 Rocket Enabled</label><input type="number" id="p-item-rocket-steps" value="5" placeholder="steps"></div>
+          <div><label><input type="checkbox" id="p-item-bomb-enabled" checked style="width:auto;display:inline-block;margin-right:6px;">💣 Bomb Enabled</label><input type="number" id="p-item-bomb-steps" value="5" placeholder="steps"></div>
+          <div><label><input type="checkbox" id="p-item-arrow-enabled" checked style="width:auto;display:inline-block;margin-right:6px;">🏹 Arrow Enabled</label><input type="number" id="p-item-arrow-steps" value="3" placeholder="steps"></div>
+        </div>
+
         <div class="btn-row">
           <button class="btn-secondary" id="save-preset-btn">💾 Save Preset</button>
           <button class="btn-secondary" id="load-preset-btn">📂 Load Preset</button>
@@ -82,6 +125,11 @@
         <h2>Question Bank Upload</h2>
         <div class="file-drop">CSV format: question,optA,optB,optC,optD,correctLetter,difficulty,topic</div>
         <input type="file" id="question-file" accept=".csv,.xlsx,.xls" style="margin-top:8px;">
+        <label style="margin-top:8px;">Upload Mode</label>
+        <select id="question-mode">
+          <option value="append" selected>Append (keep existing questions)</option>
+          <option value="replace">Replace (wipe bank, renumber from Q001)</option>
+        </select>
         <button class="btn-primary" id="upload-questions-btn">⬆️ Upload</button>
         <div id="question-msg"></div>
       </div>
