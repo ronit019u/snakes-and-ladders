@@ -12,13 +12,31 @@ export function getTileNumber(row, col) {
   return isEvenRow ? base + col + 1 : base + (10 - col);
 }
 
-export function getFlashingTileColors(blueProb = 0.5, redProb = 0.3) {
+// blueProb / redProb are integer PERCENTAGES (0-100), matching the backend
+// preset schema (flashingTile.blueProb / redProb). Kept as percentages end
+// to end so preset JSON round-trips without unit conversion surprises.
+//
+// Colors are derived from a per-tile hash so the same preset always paints
+// the same tiles the same way (no flicker on re-render), but the hash needs
+// to actually spread across [0,1) or a preset change becomes invisible.
+// A plain LCG-style seed clusters low for small tile numbers, so we run the
+// tile number through an integer mix (murmur-style) before normalizing.
+function hashTile(tile) {
+  let h = tile ^ 0x9e3779b9;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  h = h ^ (h >>> 16);
+  return (h >>> 0) / 4294967296; // uint32 -> [0,1)
+}
+
+export function getFlashingTileColors(blueProb = 30, redProb = 30) {
+  const blueFrac = blueProb / 100;
+  const redFrac = redProb / 100;
   const colors = {};
   FLASHING_TILES.forEach((tile) => {
-    const seed = tile * 7919 + 12345;
-    const rand = ((seed * 9301 + 49297) % 233280) / 233280;
-    if (rand < blueProb) colors[tile] = 'blue';
-    else if (rand < blueProb + redProb) colors[tile] = 'red';
+    const rand = hashTile(tile);
+    if (rand < blueFrac) colors[tile] = 'blue';
+    else if (rand < blueFrac + redFrac) colors[tile] = 'red';
     else colors[tile] = 'none';
   });
   return colors;
@@ -44,7 +62,7 @@ export function buildBoard(containerEl, flashColors = null) {
 
       if (FLASHING_TILES.includes(tileNum)) {
         tile.classList.add('flash');
-        const color = flashColors?.[tileNum] || getFlashingTileColors(0.5, 0.3)[tileNum];
+        const color = flashColors?.[tileNum] || getFlashingTileColors(30, 30)[tileNum];
         if (color === 'blue') tile.classList.add('flash-blue');
         else if (color === 'red') tile.classList.add('flash-red');
       }
