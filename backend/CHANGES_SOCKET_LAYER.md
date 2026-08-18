@@ -142,3 +142,15 @@ how the frontend was actually built.
 - **Progression-based bonus rounds still not implemented** (timer-based
   only) — same schema gap as before (no per-player "tiles since last
   bonus" field).
+
+# Socket.io Real-Time Layer — Changes Summary (v3, unified player list & earthquake fixes)
+
+This supersedes the previous CHANGES_SOCKET_LAYER.md. After reconciling the socket layer with the frontend's polling-based architecture, we've made additional improvements to unify player list generation and fix earthquake behavior for finished players.
+
+## Changes Made (v3 - Current)
+
+### Changed: services/socketService.js
+
+**Added import for unified player list builder:**
+```javascript
+const { buildPublicPlayerList } = require('./playerHelpers');

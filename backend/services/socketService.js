@@ -32,6 +32,7 @@
 
 const { readDB, writeDB } = require('./dbService');
 const gameLogic = require('./gameLogic');
+const { buildPublicPlayerList } = require('./playerHelpers');
 
 let ioInstance = null;
 
@@ -132,7 +133,7 @@ function markPlayerInactive(sessionId, playerId) {
 
     broadcastGameEvent(sessionId, 'player_disconnected', {
         playerId,
-        activePlayers: getPublicPlayerList(sessionId)
+        activePlayers: buildPublicPlayerList(session)
     });
 }
 
@@ -192,7 +193,8 @@ function triggerEarthquake(sessionId) {
     const magnitude = preset.earthquake.magnitude || 3;
 
     session.players.forEach(p => {
-        if (p.turnStatus === 'active') {
+        // EXCLUDE FINISHED PLAYERS FROM EARTHQUAKE EFFECTS
+        if (p.turnStatus === 'active' && !p.completedAt) {
             p.currentTile = Math.max(1, p.currentTile - magnitude);
         }
     });
@@ -200,7 +202,7 @@ function triggerEarthquake(sessionId) {
 
     broadcastGameEvent(sessionId, 'earthquake_event', {
         magnitude,
-        activePlayers: getPublicPlayerList(sessionId)
+        activePlayers: buildPublicPlayerList(session)
     });
 }
 
@@ -255,26 +257,6 @@ function clearBonusExpiry(bonusRoundId) {
         clearTimeout(bonusExpiryTimers[bonusRoundId]);
         delete bonusExpiryTimers[bonusRoundId];
     }
-}
-
-// -----------------------------------------------------------------------
-// Helpers
-// -----------------------------------------------------------------------
-
-function getPublicPlayerList(sessionId) {
-    const db = readDB();
-    const session = db.sessions[sessionId];
-    if (!session) return null;
-
-    return [...session.players]
-        .sort((a, b) => b.currentTile - a.currentTile)
-        .map(p => ({
-            playerId: p.playerId,
-            username: p.username,
-            currentTile: p.currentTile,
-            tokenColor: p.tokenColor,
-            turnStatus: p.turnStatus
-        }));
 }
 
 // -----------------------------------------------------------------------
