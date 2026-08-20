@@ -1,3 +1,9 @@
+Changelog – 2026-08-20
+Added req.body.playerId / req.body.sessionId fallback in move, useItem, validateAnswer, and submitBonusAnswer to support bot requests without session cookies.
+
+Released activeBonusRounds entry immediately after a correct bonus‑round answer (expireBonusRound) to allow subsequent bonus rounds to trigger.
+
+
 Changelog – 2026-08-16
 Server port now reads from process.env.PORT with fallback to 5000 for flexible deployment
 Set flashing tile item grant probability to 100% for testing purposes

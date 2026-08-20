@@ -105,8 +105,8 @@ function startBonusRound(req, res) {
 function submitBonusAnswer(req, res) {
     try {
         const { bonusRoundId, selectedOption } = req.body;
-        const playerId = req.session.playerId;
-        const sessionId = req.session.sessionId;
+        const playerId = req.session.playerId || req.body.playerId;
+        const sessionId = req.session.sessionId || req.body.sessionId;
 
         if (!bonusRoundId || !selectedOption) {
             return res.json({
@@ -222,6 +222,7 @@ function submitBonusAnswer(req, res) {
         }
 
         bonus.winnerId = playerId;
+        expireBonusRound(bonusRoundId);
 
         const reward = gameLogic.getBonusReward(session.presets);
         let newTile = player.currentTile;

@@ -70,8 +70,8 @@ function getRandomQuestion(req, res) {
 function validateAnswer(req, res) {
     try {
         const { questionId, selectedOption } = req.body;
-        const playerId = req.session.playerId;
-        const sessionId = req.session.sessionId;
+        const playerId = req.session.playerId || req.body.playerId;
+        const sessionId = req.session.sessionId || req.body.sessionId;
 
         // 1. 验证必要字段
         if (!questionId || !selectedOption) {

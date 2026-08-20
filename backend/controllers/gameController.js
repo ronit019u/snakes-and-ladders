@@ -358,8 +358,8 @@ function start(req, res) {
 // ---------- POST /api/game/move ----------
 function move(req, res) {
     try {
-        const playerId = req.session.playerId;
-        const sessionId = req.session.sessionId;
+        const playerId = req.session.playerId || req.body.playerId;
+        const sessionId = req.session.sessionId || req.body.sessionId;
         const { targetTile } = req.body;
 
         if (!playerId || !sessionId) {
@@ -619,8 +619,8 @@ function move(req, res) {
 // ---------- POST /api/game/item/use ----------
 function useItem(req, res) {
     try {
-        const playerId = req.session.playerId;
-        const sessionId = req.session.sessionId;
+        const playerId = req.session.playerId || req.body.playerId;
+        const sessionId = req.session.sessionId || req.body.sessionId;
         const { itemType, targetPlayerId } = req.body;
 
         if (!playerId || !sessionId) {
