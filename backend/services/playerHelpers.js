@@ -81,28 +81,22 @@ function applyPlayerFinish(session, player) {
  * @param {Object} bonusController - 奖励回合控制器
  * @returns {boolean} 是否触发了奖励回合
  */
-function checkTileBonusTrigger(session, player, sessionId, socketService, bonusController) {
-    // 已完成玩家不触发
+function checkTileBonusTrigger(session, player, sessionId, socketService, bonusController, db) {
     if (player.completedAt) return false;
-    // 游戏未开始或已结束不触发
     if (session.gameStatus !== 'InProgress') return false;
 
     const currentTile = player.currentTile;
-    // 只有 10-99 才可能触发（100 不触发）
     if (currentTile < 10 || currentTile >= 100) return false;
 
-    // 计算当前所在的 10 倍数格子 (10, 20, 30, ..., 90)
-    const tileGroup = Math.floor(currentTile / 10) * 10; // 向下取整到 10 的倍数
-    // 例如：currentTile=12 → 10, currentTile=25 → 20, currentTile=99 → 90
-
-    // 如果该格子已经触发过，不再触发
+    const tileGroup = Math.floor(currentTile / 10) * 10;
     const triggered = session.triggeredBonusTiles || [];
     if (triggered.includes(tileGroup)) return false;
 
-    // 触发奖励回合
-    const result = bonusController.startBonusRoundLogicOnly(sessionId);
+    // 传入外部 db，确保修改在同一个对象上
+    const result = bonusController.startBonusRoundLogicOnly(sessionId, db);
     if (result.code === 0) {
         session.triggeredBonusTiles.push(tileGroup);
+        // 不写库，由调用者统一 writeDB
         socketService.broadcastGameEvent(sessionId, 'bonus_round_started', result.data);
         socketService.scheduleBonusExpiry(sessionId, result.data.bonusRoundId);
         return true;

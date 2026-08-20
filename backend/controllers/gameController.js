@@ -447,7 +447,7 @@ function move(req, res) {
                 });
             }
 
-            checkTileBonusTrigger(session, player, sessionId, socketService, bonusController);
+            checkTileBonusTrigger(session, player, sessionId, socketService, bonusController, db);
             writeDB(db);
             socketService.broadcastGameEvent(sessionId, 'move_update', {
                 playerId,
@@ -583,8 +583,7 @@ function move(req, res) {
                 });
             }
         }
-
-        checkTileBonusTrigger(session, player, sessionId, socketService, bonusController);
+        checkTileBonusTrigger(session, player, sessionId, socketService, bonusController, db);
         writeDB(db);
         socketService.broadcastGameEvent(sessionId, 'move_update', {
             playerId,
@@ -778,7 +777,7 @@ function useItem(req, res) {
 
         // 检查是否触发10倍数奖励（仅火箭主动移动触发，炸弹/箭不触发）
         if (itemType === 'rocket') {
-            checkTileBonusTrigger(session, player, sessionId, socketService, bonusController);
+            checkTileBonusTrigger(session, player, sessionId, socketService, bonusController, db);
         }
 
         writeDB(db);

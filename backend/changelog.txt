@@ -1,7 +1,7 @@
 Changelog – 2026-08-20
 Added req.body.playerId / req.body.sessionId fallback in move, useItem, validateAnswer, and submitBonusAnswer to support bot requests without session cookies.
-
 Released activeBonusRounds entry immediately after a correct bonus‑round answer (expireBonusRound) to allow subsequent bonus rounds to trigger.
+Fixed an issue where bonus rounds would not trigger properly after the first successful answer.
 
 
 Changelog – 2026-08-16

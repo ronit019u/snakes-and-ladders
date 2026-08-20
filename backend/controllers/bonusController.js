@@ -7,13 +7,13 @@ const { buildPublicPlayerList, applyPlayerFinish } = require('../services/player
 const activeBonusRounds = {};
 
 // 原 startBonusRoundLogicOnly 保持不变，但让它返回 db 和 session
-function startBonusRoundLogicOnly(sessionId) {
+function startBonusRoundLogicOnly(sessionId, db) {
     if (!sessionId) {
         return { code: 1001, data: null, msg: 'Missing required field: sessionId' };
     }
 
-    const db = readDB();
-    const session = db.sessions[sessionId];
+    const _db = db || readDB();
+    const session = _db.sessions[sessionId];
 
     if (!session) {
         return { code: 2003, data: null, msg: 'Session not found' };
@@ -29,7 +29,7 @@ function startBonusRoundLogicOnly(sessionId) {
     }
 
     const usedIds = session.usedQuestionIds || [];
-    const availableQuestions = db.questions.filter(q => !usedIds.includes(q.questionId));
+    const availableQuestions = _db.questions.filter(q => !usedIds.includes(q.questionId));
 
     if (availableQuestions.length === 0) {
         return { code: 2005, data: null, msg: 'No unused questions remain' };
@@ -57,8 +57,7 @@ function startBonusRoundLogicOnly(sessionId) {
             options: selected.options
         },
         msg: 'Bonus round started',
-        // 新增：返回 db 和 session 引用，供调用者写库
-        _db: db,
+        _db: _db,
         _session: session
     };
 }
@@ -67,17 +66,14 @@ function startBonusRoundLogicOnly(sessionId) {
 function startBonusRoundLogic(sessionId) {
     const result = startBonusRoundLogicOnly(sessionId);
     if (result.code === 0 && result._db && result._session) {
-        // 直接使用同一个 db 实例写库，不会丢失修改
         writeDB(result._db);
     }
-    // 返回时去掉内部字段
     return {
         code: result.code,
         data: result.data,
         msg: result.msg
     };
 }
-
 
 // ---------- POST /api/bonus/start ----------
 
