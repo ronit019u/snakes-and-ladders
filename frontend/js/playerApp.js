@@ -1,5 +1,5 @@
 // js/playerApp.js
-// Player view – dice uses backend random value, with movement animation.
+// Player screen – 3D dice, smooth movement, bonus/quiz overlays.
 
 import { state, setApiBase } from './config.js';
 import { GameAPI, QuestionAPI, BonusAPI } from './apiService.js';
@@ -7,7 +7,7 @@ import { connectSocket, onSocketConnect, onSocketDisconnect, onSocketEvent, join
 import { buildBoard, renderTokens, getFlashingTileColors } from './boardData.js';
 
 const ITEM_ICONS = { rocket: '🚀', bomb: '💣', arrow: '🏹' };
-const TARGETED_ITEMS = ['bomb', 'arrow']; // items that require picking an opponent
+const TARGETED_ITEMS = ['bomb', 'arrow'];
 
 let sessionId = null;
 let playerId = null;
@@ -15,13 +15,13 @@ let myUsername = null;
 let iAmOwner = false;
 let pollTimer = null;
 let currentQuiz = null;
-let currentBonus = null;         // { bonusRoundId, timerHandle }
+let currentBonus = null;
 let localInventory = [];
 let boardTileEls = null;
-let prevPlayers = null;          // for movement animation
-let leaderboardCount = 5;        // from presets.leaderboardDisplayCount / state.leaderboardDisplayCount
-let bonusTimeoutSecs = 15;       // from presets.bonusTimeout
-let iAmFinished = false;         // set once my own completedAt is non-null (error 2020 guard)
+let prevPlayers = null;
+let leaderboardCount = 5;
+let bonusTimeoutSecs = 15;
+let iAmFinished = false;
 
 const $ = id => document.getElementById(id);
 
@@ -29,13 +29,10 @@ function showMsg(elId, text, ok) {
   $(elId).innerHTML = `<div class="msg ${ok ? 'ok' : 'err'}">${text}</div>`;
 }
 
-// Central place to react to backend error codes so every caller doesn't
-// have to special-case them individually. Returns true if the error was
-// specially handled (caller can usually just stop after this).
 function handleApiError(r, elId = 'game-msg') {
   if (r.code === 2020) {
     iAmFinished = true;
-    showMsg(elId, `🏁 You've already finished the game — just watching the rest play out.`, false);
+    showMsg(elId, `🏁 You've already finished — watching the rest.`, false);
     lockGameControls();
     return true;
   }
@@ -49,7 +46,7 @@ function handleApiError(r, elId = 'game-msg') {
 function lockGameControls() {
   const rollBtn = $('roll-btn');
   if (rollBtn) rollBtn.disabled = true;
-  document.querySelectorAll('.item-slot').forEach((el) => { el.onclick = null; el.classList.add('empty'); });
+  document.querySelectorAll('.item-slot').forEach(el => { el.onclick = null; el.classList.add('empty'); });
 }
 
 function withLoadingState(buttonEl, loadingText, fn) {
@@ -61,7 +58,7 @@ function withLoadingState(buttonEl, loadingText, fn) {
     try {
       await fn(...args);
     } catch (err) {
-      console.error('[playerApp] unexpected error:', err);
+      console.error('[playerApp]', err);
       showMsg('game-msg', `Unexpected error: ${err.message}`, false);
     } finally {
       buttonEl.disabled = false;
@@ -70,46 +67,27 @@ function withLoadingState(buttonEl, loadingText, fn) {
   };
 }
 
-// ---------- Dice spin animation (visual only) ----------
-const DICE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+// ---------- 3D Dice Animation ----------
+const DICE_ROTATIONS = {
+  1: { x: 0, y: 0, z: 0 },
+  2: { x: 0, y: 180, z: 0 },
+  3: { x: 0, y: -90, z: 0 },
+  4: { x: 0, y: 90, z: 0 },
+  5: { x: -90, y: 0, z: 0 },
+  6: { x: 90, y: 0, z: 0 }
+};
 
 function playDiceAnimation(finalValue) {
   return new Promise((resolve) => {
-    const diceEl = $('dice-display');
-    const btn = $('roll-btn');
-    btn.disabled = true;
-    diceEl.classList.add('spin');
-
-    // Rapid spin (350ms)
-    let interval = setInterval(() => {
-      diceEl.textContent = DICE_FACES[Math.floor(Math.random() * 6)];
-    }, 60);
-
-    setTimeout(() => {
-      clearInterval(interval);
-      // Short deceleration phase — ~700ms total, so the whole roll
-      // (spin + decel) lands around 1s instead of the old ~3s.
-      let step = 0;
-      const maxSteps = 6;
-      let delay = 60;
-
-      function slowStep() {
-        if (step >= maxSteps) {
-          // Display the actual backend value
-          const idx = Math.min(Math.max(finalValue - 1, 0), 5);
-          diceEl.textContent = DICE_FACES[idx] || '🎲';
-          diceEl.classList.remove('spin');
-          btn.disabled = false;
-          resolve();
-          return;
-        }
-        diceEl.textContent = DICE_FACES[Math.floor(Math.random() * 6)];
-        step++;
-        delay += 20;
-        setTimeout(slowStep, delay);
-      }
-      setTimeout(slowStep, 60);
-    }, 350);
+    const dice = $('dice');
+    if (!dice) { resolve(); return; }
+    const rot = DICE_ROTATIONS[finalValue] || DICE_ROTATIONS[1];
+    const turns = 3 + Math.floor(Math.random() * 3);
+    const rx = turns * 360 + rot.x;
+    const ry = turns * 360 + rot.y;
+    const rz = turns * 360 + rot.z;
+    dice.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg)`;
+    setTimeout(resolve, 800);
   });
 }
 
@@ -126,15 +104,10 @@ function setupSocket() {
     $('socket-status').innerText = 'disconnected';
   });
   onSocketEvent((event, data) => {
-    if (event === 'bonus_round_started') {
-      openBonusRound(data);
-    } else if (event === 'bonus_round_expired') {
-      handleBonusExpired(data);
-    } else if (event === 'bonus_result') {
-      handleBonusResult(data);
-    } else if (event === 'game_over') {
-      handleGameOver(data);
-    }
+    if (event === 'bonus_round_started') openBonusRound(data);
+    else if (event === 'bonus_round_expired') handleBonusExpired(data);
+    else if (event === 'bonus_result') handleBonusResult(data);
+    else if (event === 'game_over') handleGameOver(data);
     if (sessionId) pollState();
   });
 }
@@ -183,18 +156,16 @@ async function pollState() {
   if (!sessionId) return;
   const r = await GameAPI.getState(sessionId);
   if (r.code !== 0) return;
-  const { gameStatus, activePlayers, winnerId, presets } = r.data;
+  const { gameStatus, activePlayers, winnerId, leaderboardDisplayCount, presets } = r.data;
 
-  // leaderboardDisplayCount is returned top-level per the updated
-  // /api/game/state/:sessionId spec, but fall back to the preset copy.
-  leaderboardCount = r.data.leaderboardDisplayCount || presets?.leaderboardDisplayCount || 5;
+  leaderboardCount = leaderboardDisplayCount || presets?.leaderboardDisplayCount || 5;
   bonusTimeoutSecs = presets?.bonusTimeout || 15;
 
   const me = activePlayers?.find(p => p.playerId === playerId);
   if (me && me.completedAt && !iAmFinished) {
     iAmFinished = true;
     lockGameControls();
-    showMsg('game-msg', `🏁 You reached tile 100! Waiting for the rest of the game to finish…`, true);
+    showMsg('game-msg', `🏁 You reached tile 100! Waiting for others…`, true);
   }
 
   if (gameStatus === 'waiting') {
@@ -203,27 +174,23 @@ async function pollState() {
     if ($('game-screen').classList.contains('hidden')) enterGameScreen(presets);
     const players = activePlayers;
     renderGame(players, prevPlayers);
-    prevPlayers = players.map(p => ({ ...p })); // deep copy for next animation
+    prevPlayers = players.map(p => ({ ...p }));
   } else if (gameStatus === 'Completed') {
     clearInterval(pollTimer);
     handleGameOver({ winnerId, activePlayers });
   }
 }
 
-// game_over now fires once 3 players have finished (not just 1), so show a
-// small podium of finishers rather than a single "winner" line.
 function handleGameOver(data) {
   clearInterval(pollTimer);
   const players = data.activePlayers || [];
   const finishers = players
     .filter(p => p.completedAt)
     .sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt));
-
   const medals = ['🥇', '🥈', '🥉'];
   const podium = finishers.length
     ? finishers.map((p, i) => `${medals[i] || '🏅'} ${p.username}`).join('&nbsp;&nbsp;')
     : (data.winnerId || 'unknown');
-
   showMsg('game-msg', `🏆 Game over! ${podium}`, true);
   $('game-status-label').innerText = 'Completed';
 }
@@ -231,30 +198,24 @@ function handleGameOver(data) {
 function renderWaitingPlayers(players) {
   $('waiting-players').innerHTML =
     players.map(p => `<div class="player-row"><span class="swatch" style="background:${p.tokenColor}"></span>${p.username}</div>`).join('') +
-    `<div style="font-size:11px;color:#64748b;margin-top:6px;">${players.length} / 25 joined</div>`;
+    `<div style="font-size:12px;color:#64748b;margin-top:8px;">${players.length} / 25 joined</div>`;
 }
 
 function enterGameScreen(presets) {
   $('waiting-screen').classList.add('hidden');
   $('game-screen').classList.remove('hidden');
-
   const flashColors = presets ? getFlashingTileColors(
     presets.flashingTile?.blueProb ?? 30,
     presets.flashingTile?.redProb ?? 30
   ) : null;
-
   boardTileEls = buildBoard($('board'), flashColors);
   $('my-status').innerText = `You: ${myUsername}`;
   renderInventory();
-  prevPlayers = null; // first render – no animation
+  prevPlayers = null;
 }
 
 function renderGame(players, oldPlayers = null) {
-  renderTokens(players, oldPlayers); // animation handled by boardData
-
-  // Leaderboard — finished players (by completedAt) rank above everyone
-  // still moving, tied-broken by tile; count of rows shown comes from
-  // the preset's leaderboardDisplayCount.
+  renderTokens(players, oldPlayers);
   const sorted = [...players].sort((a, b) => {
     if (a.completedAt && b.completedAt) return new Date(a.completedAt) - new Date(b.completedAt);
     if (a.completedAt) return -1;
@@ -263,12 +224,10 @@ function renderGame(players, oldPlayers = null) {
   });
   const topN = sorted.slice(0, leaderboardCount);
   const myRank = sorted.findIndex(p => p.playerId === playerId) + 1;
-
   const rowHtml = (p, i) => {
     const status = p.completedAt ? '🏁 Finished' : `Tile ${p.currentTile}`;
-    return `<div class="leaderboard-row"><span>#${i + 1} ${p.username}</span><span>${status}</span></div>`;
+    return `<div class="leaderboard-row"><span>#${i+1} ${p.username}</span><span>${status}</span></div>`;
   };
-
   let html = topN.map((p, i) => rowHtml(p, i)).join('');
   if (myRank > leaderboardCount) {
     const me = sorted[myRank - 1];
@@ -277,49 +236,28 @@ function renderGame(players, oldPlayers = null) {
   $('leaderboard').innerHTML = html;
 }
 
-// ---------- Roll Dice (uses backend random value) ----------
+// ---------- Roll Dice ----------
 async function handleRoll() {
   const btn = $('roll-btn');
   if (btn.disabled) return;
-
-  // Pause the 2s background poll for the duration of the roll. Without
-  // this, the interval can fire mid-animation, pull the already-updated
-  // tile from the backend, and snap the token into place while the dice
-  // is still spinning — the "piece moves before the result appears" bug.
   clearInterval(pollTimer);
-
   try {
-    // 1. Call backend /api/game/move (no body = roll dice)
     const result = await GameAPI.rollDice();
-    console.log('[Dice] Backend response:', result);
-
     if (handleApiError(result)) return;
-
-    // 2. Backend returns the dice value (1–6)
     const diceValue = result.data.diceValue;
-
-    // 3. Play dice animation showing the real value
     await playDiceAnimation(diceValue);
-
-    // 4. Handle item grant (if any)
     if (result.data.itemGranted) {
       localInventory.push(result.data.itemGranted);
       renderInventory();
       showMsg('game-msg', `🎁 You received: ${result.data.itemGranted}`, true);
     }
-
-    // 5. Handle quiz (if backend indicates)
     if (result.data.needsQuiz) {
       openQuiz();
     } else {
       showMsg('game-msg', result.msg, true);
     }
-
-    // 6. Refresh state – triggers movement animation, now that the dice
-    // animation has actually finished
     await pollState();
   } finally {
-    // Resume regular polling regardless of how the roll turned out
     pollTimer = setInterval(pollState, 2000);
   }
 }
@@ -375,14 +313,9 @@ async function submitQuizAnswer(letter) {
 }
 
 // ---------- Bonus Round ----------
-// Triggered by the backend via socket (timer-based every bonus.interval
-// seconds, or when a player lands on a 10-tile group for the first time
-// that session). Any not-yet-finished player can answer; first correct
-// answer wins the reward, wrong answers get bonus.penaltySteps knocked off.
 function openBonusRound(data) {
-  if (iAmFinished) return; // finished players can't participate (error 2020)
+  if (iAmFinished) return;
   if (currentBonus?.timerHandle) clearInterval(currentBonus.timerHandle);
-
   currentBonus = { bonusRoundId: data.bonusRoundId, timerHandle: null };
   $('bonus-question').innerText = data.questionText;
   $('bonus-result').innerText = '';
@@ -397,7 +330,6 @@ function openBonusRound(data) {
     optsEl.appendChild(b);
   });
   $('bonus-overlay').classList.add('active');
-
   let timeLeft = bonusTimeoutSecs;
   $('bonus-timer').innerText = timeLeft;
   currentBonus.timerHandle = setInterval(() => {
@@ -415,9 +347,6 @@ async function submitBonusAnswer(letter) {
   document.querySelectorAll('#bonus-options .quiz-opt').forEach(b => b.disabled = true);
   const result = await BonusAPI.submitAnswer(currentBonus.bonusRoundId, letter);
   if (handleApiError(result, 'bonus-result')) return;
-  // Server broadcasts bonus_result / bonus_round_expired to everyone, which
-  // is what actually closes the overlay — this just gives instant local
-  // feedback while we wait for that broadcast.
   $('bonus-result').innerText = result.data?.correct
     ? '✅ Correct! Waiting for confirmation…'
     : `❌ Wrong — knocked back ${result.data?.penalty ?? ''} steps.`;
@@ -431,18 +360,15 @@ function closeBonusOverlay() {
 
 function handleBonusExpired(data) {
   if (!currentBonus || currentBonus.bonusRoundId !== data.bonusRoundId) return;
-  $('bonus-result').innerText = '⌛ Time\'s up — no one answered in time.';
+  $('bonus-result').innerText = '⌛ Time\'s up — no one answered.';
   setTimeout(closeBonusOverlay, 1500);
 }
 
-// Backend sends bonusType as 'item_grant' or 'forward_boost' (see
-// bonusController.js's reward.type) — not the 'item'/'forward' shorthand
-// used in the API doc's wording. Match the real values.
 function handleBonusResult(data) {
   const wasMine = currentBonus && currentBonus.bonusRoundId === data.bonusRoundId;
   const isItem = data.bonusType === 'item_grant';
   const reward = isItem ? `item: ${ITEM_ICONS[data.bonusValue] || ''} ${data.bonusValue}` : `+${data.bonusValue} steps`;
-  showMsg('game-msg', `🎉 Bonus round won by ${data.winnerUsername} (${reward})`, true);
+  showMsg('game-msg', `🎉 Bonus won by ${data.winnerUsername} (${reward})`, true);
   if (data.winnerPlayerId === playerId && isItem) {
     localInventory.push(data.bonusValue);
     renderInventory();
@@ -453,7 +379,7 @@ function handleBonusResult(data) {
   }
 }
 
-// ---------- Inventory & Item Use (rocket / bomb / arrow) ----------
+// ---------- Inventory ----------
 function renderInventory() {
   const el = $('inventory');
   el.innerHTML = '';
@@ -479,17 +405,10 @@ function renderInventory() {
 
 async function useItem(itemType, slotIndex) {
   if (TARGETED_ITEMS.includes(itemType)) {
-    // bomb and arrow both require picking an opposing player as the target
     const r = await GameAPI.getState(sessionId);
-    if (r.code !== 0) {
-      showMsg('game-msg', 'Cannot fetch players', false);
-      return;
-    }
+    if (r.code !== 0) { showMsg('game-msg', 'Cannot fetch players', false); return; }
     const others = r.data.activePlayers.filter(p => p.playerId !== playerId && !p.completedAt);
-    if (others.length === 0) {
-      showMsg('game-msg', 'No other players to target', false);
-      return;
-    }
+    if (others.length === 0) { showMsg('game-msg', 'No other players to target', false); return; }
     others.sort((a, b) => b.currentTile - a.currentTile);
     $('target-title').innerText = `${ITEM_ICONS[itemType] || ''} Select a target`;
     const listEl = $('target-list');
@@ -513,7 +432,6 @@ async function useItem(itemType, slotIndex) {
       };
     });
   } else {
-    // Rocket — no target needed, self-effect only
     const res = await GameAPI.useItem(itemType);
     if (handleApiError(res)) return;
     showMsg('game-msg', res.msg, res.code === 0);
@@ -538,8 +456,6 @@ function init() {
       console.error('[playerApp] roll error:', err);
       showMsg('game-msg', `Error: ${err.message}`, false);
       $('roll-btn').disabled = false;
-      $('dice-display').classList.remove('spin');
-      $('dice-display').innerText = '🎲';
     }
   };
   $('target-cancel-btn').onclick = () => $('target-overlay').classList.remove('active');

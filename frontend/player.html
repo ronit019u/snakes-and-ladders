@@ -55,7 +55,18 @@
       <div class="leaderboard" id="leaderboard"></div>
       <div class="board" id="board"></div>
 
-      <div class="dice" id="dice-display">🎲</div>
+      <!-- 3D Dice -->
+      <div id="dice-container">
+        <div id="dice" class="dice-3d">
+          <div class="face face-1">⚀</div>
+          <div class="face face-2">⚁</div>
+          <div class="face face-3">⚂</div>
+          <div class="face face-4">⚃</div>
+          <div class="face face-5">⚄</div>
+          <div class="face face-6">⚅</div>
+        </div>
+      </div>
+
       <div class="roll-bar">
         <button class="btn-primary" id="roll-btn">🎲 Roll Dice</button>
       </div>
@@ -79,7 +90,7 @@
     </div>
   </div>
 
-  <!-- ===== ITEM TARGET OVERLAY (bomb / arrow) ===== -->
+  <!-- ===== ITEM TARGET OVERLAY ===== -->
   <div class="overlay" id="target-overlay">
     <div class="modal">
       <div id="target-title" style="font-weight:700;margin-bottom:8px;">💣 Select a target</div>

@@ -1,5 +1,5 @@
 // js/boardData.js
-// Board layout, SVG snakes/ladders, and animated token movement.
+// Board layout, SVG snakes/ladders, token animation with path following.
 
 export const LADDERS = [[2, 23], [6, 45], [20, 59], [52, 71], [57, 96], [71, 92], [88, 99], [95, 98]];
 export const SNAKES = [[16, 6], [47, 26], [49, 11], [56, 53], [62, 19], [64, 60], [87, 24], [93, 73]];
@@ -12,21 +12,13 @@ export function getTileNumber(row, col) {
   return isEvenRow ? base + col + 1 : base + (10 - col);
 }
 
-// blueProb / redProb are integer PERCENTAGES (0-100), matching the backend
-// preset schema (flashingTile.blueProb / redProb). Kept as percentages end
-// to end so preset JSON round-trips without unit conversion surprises.
-//
-// Colors are derived from a per-tile hash so the same preset always paints
-// the same tiles the same way (no flicker on re-render), but the hash needs
-// to actually spread across [0,1) or a preset change becomes invisible.
-// A plain LCG-style seed clusters low for small tile numbers, so we run the
-// tile number through an integer mix (murmur-style) before normalizing.
+// Deterministic hash for flashing tile colors
 function hashTile(tile) {
   let h = tile ^ 0x9e3779b9;
   h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
   h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
   h = h ^ (h >>> 16);
-  return (h >>> 0) / 4294967296; // uint32 -> [0,1)
+  return (h >>> 0) / 4294967296;
 }
 
 export function getFlashingTileColors(blueProb = 30, redProb = 30) {
@@ -42,6 +34,18 @@ export function getFlashingTileColors(blueProb = 30, redProb = 30) {
   return colors;
 }
 
+// Detect if a move is on a ladder or snake
+function getPathType(fromTile, toTile) {
+  for (const [bottom, top] of LADDERS) {
+    if (bottom === fromTile && top === toTile) return 'ladder';
+  }
+  for (const [head, tail] of SNAKES) {
+    if (head === fromTile && tail === toTile) return 'snake';
+  }
+  return null;
+}
+
+// ----- Build board tiles and SVG connections -----
 export function buildBoard(containerEl, flashColors = null) {
   containerEl.innerHTML = '';
   const tileEls = {};
@@ -51,7 +55,7 @@ export function buildBoard(containerEl, flashColors = null) {
       const tileNum = getTileNumber(row, col);
       const tile = document.createElement('div');
       tile.className = 'tile';
-      tile.id = `tile-${tileNum}`;          // used for animation positioning
+      tile.id = `tile-${tileNum}`;
       tile.dataset.tile = tileNum;
       tile.dataset.row = row;
       tile.dataset.col = col;
@@ -83,7 +87,7 @@ export function buildBoard(containerEl, flashColors = null) {
   return tileEls;
 }
 
-// ----- SVG drawing: full ladders and snakes spanning start to end -----
+// ----- Draw snakes and ladders with custom colors -----
 function drawConnections(containerEl) {
   const oldSvg = containerEl.querySelector('.board-svg-overlay');
   if (oldSvg) oldSvg.remove();
@@ -116,18 +120,36 @@ function drawConnections(containerEl) {
       svg.style.pointerEvents = 'none';
       svg.style.zIndex = '5';
 
-      // Ladders
+      // ----- Define gradients for snake (yellow-green) -----
+      const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+      gradient.setAttribute('id', 'snakeGradient');
+      gradient.setAttribute('x1', '0%');
+      gradient.setAttribute('y1', '0%');
+      gradient.setAttribute('x2', '100%');
+      gradient.setAttribute('y2', '100%');
+      const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+      stop1.setAttribute('offset', '0%');
+      stop1.setAttribute('stop-color', '#eab308'); // yellow
+      const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+      stop2.setAttribute('offset', '100%');
+      stop2.setAttribute('stop-color', '#22c55e'); // green
+      gradient.appendChild(stop1);
+      gradient.appendChild(stop2);
+      defs.appendChild(gradient);
+      svg.appendChild(defs);
+
+      // ------ Ladders (brown) ------
       LADDERS.forEach(([bottom, top]) => {
         const from = positions[bottom];
         const to = positions[top];
         if (!from || !to) return;
-
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-
         const angle = Math.atan2(to.y - from.y, to.x - from.x);
         const perpAngle = angle + Math.PI / 2;
         const offset = 6;
 
+        // Rails (brown)
         const rail1 = [from.x + offset * Math.cos(perpAngle), from.y + offset * Math.sin(perpAngle),
                        to.x + offset * Math.cos(perpAngle), to.y + offset * Math.sin(perpAngle)];
         const rail2 = [from.x - offset * Math.cos(perpAngle), from.y - offset * Math.sin(perpAngle),
@@ -138,12 +160,21 @@ function drawConnections(containerEl) {
           line.setAttribute('y1', sy);
           line.setAttribute('x2', ex);
           line.setAttribute('y2', ey);
-          line.setAttribute('stroke', '#2dd4bf');
-          line.setAttribute('stroke-width', '3');
+          line.setAttribute('stroke', '#8B5A2B'); // brown
+          line.setAttribute('stroke-width', '4');
           line.setAttribute('stroke-linecap', 'round');
+          line.setAttribute('stroke-dasharray', '8 4');
+          const anim = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+          anim.setAttribute('attributeName', 'stroke-dashoffset');
+          anim.setAttribute('from', '0');
+          anim.setAttribute('to', '-24');
+          anim.setAttribute('dur', '1s');
+          anim.setAttribute('repeatCount', 'indefinite');
+          line.appendChild(anim);
           g.appendChild(line);
         }
 
+        // Rungs (brown)
         const steps = 7;
         for (let i = 1; i < steps; i++) {
           const t = i / steps;
@@ -158,12 +189,13 @@ function drawConnections(containerEl) {
           rung.setAttribute('y1', cy);
           rung.setAttribute('x2', dx);
           rung.setAttribute('y2', dy);
-          rung.setAttribute('stroke', '#5eead4');
-          rung.setAttribute('stroke-width', '2');
+          rung.setAttribute('stroke', '#8B5A2B');
+          rung.setAttribute('stroke-width', '3');
           rung.setAttribute('opacity', '0.7');
           g.appendChild(rung);
         }
 
+        // Arrow (brown)
         const arrowLen = 12;
         const tipX = to.x - 6 * Math.cos(angle);
         const tipY = to.y - 6 * Math.sin(angle);
@@ -173,7 +205,7 @@ function drawConnections(containerEl) {
         const p2x = tipX - arrowLen * Math.cos(angle + 0.5);
         const p2y = tipY - arrowLen * Math.sin(angle + 0.5);
         arrow.setAttribute('points', `${tipX},${tipY} ${p1x},${p1y} ${p2x},${p2y}`);
-        arrow.setAttribute('fill', '#2dd4bf');
+        arrow.setAttribute('fill', '#8B5A2B');
         arrow.setAttribute('opacity', '0.9');
         g.appendChild(arrow);
 
@@ -182,20 +214,18 @@ function drawConnections(containerEl) {
         label.setAttribute('y', from.y + from.h / 2 + 14);
         label.setAttribute('text-anchor', 'middle');
         label.setAttribute('font-size', '10');
-        label.setAttribute('fill', '#2dd4bf');
+        label.setAttribute('fill', '#8B5A2B');
         label.setAttribute('font-weight', 'bold');
         label.textContent = '⬆';
         g.appendChild(label);
-
         svg.appendChild(g);
       });
 
-      // Snakes
+      // ------ Snakes (yellow-green gradient + red tongue) ------
       SNAKES.forEach(([head, tail]) => {
         const from = positions[head];
         const to = positions[tail];
         if (!from || !to) return;
-
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 
         const midX = (from.x + to.x) / 2;
@@ -210,12 +240,21 @@ function drawConnections(containerEl) {
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         const d = `M ${from.x},${from.y} C ${cp1x},${cp1y} ${cp2x},${cp2y} ${to.x},${to.y}`;
         path.setAttribute('d', d);
-        path.setAttribute('stroke', '#fb7185');
-        path.setAttribute('stroke-width', '5');
+        path.setAttribute('stroke', 'url(#snakeGradient)');
+        path.setAttribute('stroke-width', '7');
         path.setAttribute('fill', 'none');
-        path.setAttribute('opacity', '0.85');
+        path.setAttribute('opacity', '0.9');
+        path.setAttribute('stroke-dasharray', '12 6');
+        const animPath = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+        animPath.setAttribute('attributeName', 'stroke-dashoffset');
+        animPath.setAttribute('from', '0');
+        animPath.setAttribute('to', '-36');
+        animPath.setAttribute('dur', '1.2s');
+        animPath.setAttribute('repeatCount', 'indefinite');
+        path.appendChild(animPath);
         g.appendChild(path);
 
+        // Scales (green)
         const numScales = 10;
         for (let i = 1; i < numScales; i++) {
           const t = i / numScales;
@@ -225,11 +264,12 @@ function drawConnections(containerEl) {
           const scale = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
           const s = 4;
           scale.setAttribute('points', `${x},${y-s} ${x+s},${y} ${x},${y+s} ${x-s},${y}`);
-          scale.setAttribute('fill', '#fb7185');
+          scale.setAttribute('fill', '#22c55e');
           scale.setAttribute('opacity', '0.5');
           g.appendChild(scale);
         }
 
+        // Head
         const angle = Math.atan2(to.y - from.y, to.x - from.x);
         const headSize = 12;
         const hx = from.x + 6 * Math.cos(angle);
@@ -240,14 +280,14 @@ function drawConnections(containerEl) {
         const hp2x = hx + headSize * Math.cos(angle - 1.0);
         const hp2y = hy + headSize * Math.sin(angle - 1.0);
         headPoly.setAttribute('points', `${hx},${hy} ${hp1x},${hp1y} ${hp2x},${hp2y}`);
-        headPoly.setAttribute('fill', '#f43f5e');
+        headPoly.setAttribute('fill', '#22c55e');
         headPoly.setAttribute('opacity', '0.95');
         g.appendChild(headPoly);
 
-        const eyeOff = 5;
+        // Eyes
         for (const ea of [angle + 0.8, angle - 0.8]) {
-          const ex = hx + eyeOff * Math.cos(ea);
-          const ey = hy + eyeOff * Math.sin(ea);
+          const ex = hx + 5 * Math.cos(ea);
+          const ey = hy + 5 * Math.sin(ea);
           const eye = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
           eye.setAttribute('cx', ex);
           eye.setAttribute('cy', ey);
@@ -262,6 +302,24 @@ function drawConnections(containerEl) {
           g.appendChild(pupil);
         }
 
+        // ----- Red tongue (forked) -----
+        const tongueLen = 10;
+        const tongueBaseX = hx + 8 * Math.cos(angle);
+        const tongueBaseY = hy + 8 * Math.sin(angle);
+        for (let side = -1; side <= 1; side += 2) {
+          const tipX = tongueBaseX + tongueLen * Math.cos(angle + side * 0.6);
+          const tipY = tongueBaseY + tongueLen * Math.sin(angle + side * 0.6);
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', tongueBaseX);
+          line.setAttribute('y1', tongueBaseY);
+          line.setAttribute('x2', tipX);
+          line.setAttribute('y2', tipY);
+          line.setAttribute('stroke', '#ef4444');
+          line.setAttribute('stroke-width', '2.5');
+          line.setAttribute('stroke-linecap', 'round');
+          g.appendChild(line);
+        }
+
         const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         label.setAttribute('x', to.x);
         label.setAttribute('y', to.y + to.h / 2 + 14);
@@ -271,7 +329,6 @@ function drawConnections(containerEl) {
         label.setAttribute('font-weight', 'bold');
         label.textContent = '⬇';
         g.appendChild(label);
-
         svg.appendChild(g);
       });
 
@@ -281,12 +338,10 @@ function drawConnections(containerEl) {
   });
 }
 
-// ----- Render tokens with smooth movement animation -----
+// ----- Token rendering with smooth path animation -----
 export function renderTokens(players, oldPlayers = null) {
-  // Clear all token containers
   document.querySelectorAll('.token-container').forEach(c => c.innerHTML = '');
 
-  // Create new tokens
   players.forEach(p => {
     const tileNum = p.currentTile === 0 ? 1 : p.currentTile;
     const cell = document.getElementById(`tok-${tileNum}`);
@@ -295,43 +350,83 @@ export function renderTokens(players, oldPlayers = null) {
     token.className = 'token';
     token.dataset.playerId = p.playerId;
     token.title = p.username;
-    // Inline styles to guarantee absolute positioning and transition
-    token.style.position = 'absolute';
-    token.style.bottom = '2px';
-    token.style.right = '2px';
-    token.style.width = '10px';
-    token.style.height = '10px';
-    token.style.borderRadius = '50%';
     token.style.backgroundColor = p.tokenColor;
-    token.style.border = '1px solid rgba(255,255,255,0.5)';
-    token.style.transition = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
-    token.style.transform = 'translate(0, 0)';
+    token.style.color = p.tokenColor;
     cell.appendChild(token);
   });
 
-  // Animate movement if oldPlayers provided
   if (oldPlayers && Array.isArray(oldPlayers)) {
     players.forEach(p => {
       const old = oldPlayers.find(op => op.playerId === p.playerId);
       if (old && old.currentTile !== p.currentTile) {
-        const oldTileNum = old.currentTile === 0 ? 1 : old.currentTile;
-        const newTileNum = p.currentTile === 0 ? 1 : p.currentTile;
-        const oldTile = document.getElementById(`tile-${oldTileNum}`);
-        const newTile = document.getElementById(`tile-${newTileNum}`);
-        const token = document.querySelector(`.token[data-player-id="${p.playerId}"]`);
-        if (token && oldTile && newTile) {
-          const oldRect = oldTile.getBoundingClientRect();
-          const newRect = newTile.getBoundingClientRect();
-          const dx = oldRect.left - newRect.left;
-          const dy = oldRect.top - newRect.top;
-          // Set token to old position, then animate to new
-          token.style.transform = `translate(${dx}px, ${dy}px)`;
-          requestAnimationFrame(() => {
-            token.style.transform = 'translate(0, 0)';
-          });
-          console.log(`[Animation] ${p.username} moved from ${old.currentTile} to ${p.currentTile}`);
+        const pathType = getPathType(old.currentTile, p.currentTile);
+        if (pathType) {
+          animateTokenAlongPath(p.playerId, old.currentTile, p.currentTile, pathType);
+        } else {
+          animateTokenSimple(p.playerId, old.currentTile, p.currentTile);
         }
       }
     });
   }
+}
+
+function animateTokenSimple(playerId, fromTile, toTile) {
+  const token = document.querySelector(`.token[data-player-id="${playerId}"]`);
+  if (!token) return;
+  const fromEl = document.getElementById(`tile-${fromTile}`);
+  const toEl = document.getElementById(`tile-${toTile}`);
+  if (!fromEl || !toEl) return;
+  const fromRect = fromEl.getBoundingClientRect();
+  const toRect = toEl.getBoundingClientRect();
+  const dx = fromRect.left - toRect.left;
+  const dy = fromRect.top - toRect.top;
+  token.style.transition = 'none';
+  token.style.transform = `translate(${dx}px, ${dy}px)`;
+  requestAnimationFrame(() => {
+    token.style.transition = 'transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    token.style.transform = 'translate(0, 0)';
+  });
+}
+
+function animateTokenAlongPath(playerId, fromTile, toTile, pathType) {
+  const token = document.querySelector(`.token[data-player-id="${playerId}"]`);
+  if (!token) return;
+  const board = document.getElementById('board');
+  const boardRect = board.getBoundingClientRect();
+  const fromEl = document.getElementById(`tile-${fromTile}`);
+  const toEl = document.getElementById(`tile-${toTile}`);
+  if (!fromEl || !toEl) return;
+  const fromRect = fromEl.getBoundingClientRect();
+  const toRect = toEl.getBoundingClientRect();
+
+  const startX = fromRect.left + fromRect.width/2 - boardRect.left;
+  const startY = fromRect.top + fromRect.height/2 - boardRect.top;
+  const endX = toRect.left + toRect.width/2 - boardRect.left;
+  const endY = toRect.top + toRect.height/2 - boardRect.top;
+  const midX = (startX + endX) / 2;
+  const midY = (startY + endY) / 2;
+  const offset = pathType === 'ladder' ? -50 : 50;
+  const cpX = midX;
+  const cpY = midY + offset;
+
+  const duration = 900;
+  const startTime = performance.now();
+  const startOffsetX = fromRect.left - boardRect.left;
+  const startOffsetY = fromRect.top - boardRect.top;
+  token.style.transition = 'none';
+
+  function step(time) {
+    const progress = Math.min((time - startTime) / duration, 1);
+    const t = progress;
+    const x = (1-t)*(1-t)*startX + 2*(1-t)*t*cpX + t*t*endX;
+    const y = (1-t)*(1-t)*startY + 2*(1-t)*t*cpY + t*t*endY;
+    token.style.transform = `translate(${x - startOffsetX}px, ${y - startOffsetY}px)`;
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    } else {
+      token.style.transition = 'transform 0.3s ease';
+      token.style.transform = 'translate(0, 0)';
+    }
+  }
+  requestAnimationFrame(step);
 }
