@@ -5,6 +5,7 @@ import { state, setApiBase } from './config.js';
 import { GameAPI, AdminAPI } from './apiService.js';
 import { connectSocket, onSocketConnect, onSocketDisconnect, onSocketEvent, joinRoom } from './socketService.js';
 import { buildBoard, renderTokens, getFlashingTileColors } from './boardData.js';
+import { spawnBots, stopBots, setBotStatusListener } from './botManager.js';
 
 let sessionId = null;
 let pollTimer = null;
@@ -63,6 +64,7 @@ function setupSocket() {
 // so show a small podium rather than a single winner line.
 function handleGameOver(data) {
   clearInterval(pollTimer);
+  stopBots();
   const finishers = (data.activePlayers || [])
     .filter(p => p.completedAt)
     .sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt));
@@ -90,6 +92,13 @@ async function handleLogin() {
 
 // ---------- Create room ----------
 async function handleCreateRoom() {
+  // Stop any bots left over from a previous room — otherwise they keep
+  // retrying dice rolls against a session that's now stale/dead, which
+  // looks exactly like "bots stuck failing forever" even though the new
+  // room is working fine.
+  stopBots();
+  $('bots-msg').innerHTML = '';
+
   const presetId = $('preset-select').value;
   const r = await AdminAPI.createRoom('GameMaster', presetId);
   if (r.code !== 0) return showMsg('setup-msg', r.msg, false);
@@ -115,6 +124,20 @@ async function handleStart() {
   // once it sees gameStatus flip to InProgress. Removing 'hidden' here
   // early breaks pollState()'s own "is it still hidden?" check below.
 }
+// ---------- Bots (demo) ----------
+function handleBotStatus({ total, finished, expected }) {
+  const finishedTxt = finished ? ` · finished: ${finished}` : '';
+  showMsg('bots-msg', `🤖 Bots joined: ${total}/${expected}${finishedTxt}`, true);
+}
+
+async function handleSpawnBots() {
+  if (!sessionId) return showMsg('setup-msg', 'Create a room first', false);
+  setBotStatusListener(handleBotStatus);
+  showMsg('bots-msg', '🤖 Spawning bots…', true);
+  const count = await spawnBots(sessionId);
+  showMsg('bots-msg', `🤖 ${count}/25 bots joined and are now playing.`, count === 25);
+}
+
 // ---------- Poll state ----------
 async function pollState() {
   if (!sessionId) return;
@@ -293,6 +316,7 @@ function init() {
   $('login-btn').onclick = withLoadingState($('login-btn'), 'Logging in…', handleLogin);
   $('create-room-btn').onclick = withLoadingState($('create-room-btn'), 'Creating…', handleCreateRoom);
   $('start-btn').onclick = withLoadingState($('start-btn'), 'Starting…', handleStart);
+  $('spawn-robots-btn').onclick = withLoadingState($('spawn-robots-btn'), 'Spawning…', handleSpawnBots);
   $('save-preset-btn').onclick = withLoadingState($('save-preset-btn'), 'Saving…', handleSavePreset);
   $('load-preset-btn').onclick = withLoadingState($('load-preset-btn'), 'Loading…', handleLoadPreset);
   $('upload-questions-btn').onclick = withLoadingState($('upload-questions-btn'), 'Uploading…', handleUploadQuestions);

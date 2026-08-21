@@ -35,12 +35,15 @@ async function request(path, opts) {
   }
 }
 
-export async function apiGet(path) {
-  return request(path, { method: 'GET', credentials: 'include' });
+// `credentials` defaults to 'include' (existing behavior for real players/admin,
+// who each get their own browser + express-session cookie). Bots pass 'omit'
+// instead — see BotAPI below for why.
+export async function apiGet(path, credentials = 'include') {
+  return request(path, { method: 'GET', credentials });
 }
 
-export async function apiPost(path, body = null, isForm = false) {
-  const opts = { method: 'POST', credentials: 'include', headers: {} };
+export async function apiPost(path, body = null, isForm = false, credentials = 'include') {
+  const opts = { method: 'POST', credentials, headers: {} };
   if (body && !isForm) {
     opts.headers['Content-Type'] = 'application/json';
     opts.body = JSON.stringify(body);
@@ -80,4 +83,33 @@ export const AdminAPI = {
   uploadQuestions: (formData) => apiPost('/api/admin/questions/upload', formData, true),
   savePreset: (presetId, presets, sessionId) => apiPost('/api/admin/presets', { presetId, presets, sessionId }),
   loadPreset: (presetId) => apiPost('/api/admin/presets', { presetId })
+};
+
+// ---------- Bot endpoints (used only by js/botManager.js) ----------
+// Real players never send their own playerId on move/item/quiz calls — the
+// backend figures out "who is calling" from the express-session cookie, since
+// each real player has their own browser and therefore their own cookie jar.
+// That trick breaks down for 25 bots living inside one admin tab: they all
+// share the SAME cookie jar, so every join/roll would silently stomp on
+// whichever bot's cookie landed last, and could also hijack the admin's own
+// session.
+//
+// To avoid that, bot requests carry sessionId/playerId explicitly in the body
+// and go out with credentials 'omit' (no cookies sent at all). This assumes
+// the backend can resolve "current player" from an explicit playerId the same
+// way GameAPI.disconnect(sessionId, playerId) already does above — i.e. as a
+// fallback when there's no session cookie. If your backend's /api/game/move,
+// /api/game/item/use, /api/question/validate, and /api/bonus/answer routes
+// currently require the session cookie unconditionally, they need a small
+// (one-line each) change to also accept `req.body.playerId`. No other backend
+// changes are needed — bots use the exact same routes and socket events as
+// real players.
+export const BotAPI = {
+  join: (sessionId, username) => apiPost('/api/game/join', { sessionId, username }, false, 'omit'),
+  rollDice: (sessionId, playerId) => apiPost('/api/game/move', { sessionId, playerId }, false, 'omit'),
+  finalizeMove: (sessionId, playerId, targetTile) => apiPost('/api/game/move', { sessionId, playerId, targetTile }, false, 'omit'),
+  useItem: (sessionId, playerId, itemType, targetPlayerId) => apiPost('/api/game/item/use', { sessionId, playerId, itemType, targetPlayerId }, false, 'omit'),
+  getRandomQuestion: (sessionId) => apiGet(`/api/question/random/${sessionId}`, 'omit'),
+  validateAnswer: (sessionId, playerId, questionId, selectedOption) => apiPost('/api/question/validate', { sessionId, playerId, questionId, selectedOption }, false, 'omit'),
+  submitBonusAnswer: (sessionId, playerId, bonusRoundId, selectedOption) => apiPost('/api/bonus/answer', { sessionId, playerId, bonusRoundId, selectedOption }, false, 'omit')
 };
