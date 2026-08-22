@@ -111,7 +111,10 @@ function wireBotSocket(bot, sessionId) {
 
   socket.onAny((event, data) => {
     if (!bot.alive) return;
-    if (event === 'move_update') {
+    // Bots make their initial roll only after the server confirms the game is
+    // live. Their pre-start attempt is correctly rejected by /api/game/move,
+    // and without this event there is no move_update yet to wake them up.
+    if (event === 'game_started' || event === 'move_update') {
       sleep(randomDelay(ROLL_DELAY_MIN_MS, ROLL_DELAY_MAX_MS)).then(() => rollForBot(bot, sessionId));
     } else if (event === 'bonus_round_started') {
       handleBotBonus(bot, sessionId, data);
