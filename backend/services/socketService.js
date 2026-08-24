@@ -55,10 +55,8 @@ const BONUS_ANSWER_WINDOW_MS = 15 * 1000; // 15s bonus round answer window
 
 function initSocket(io) {
     ioInstance = io;
-    console.log('[SocketService] Initialized');
 
     io.on('connection', (socket) => {
-        console.log('[SocketService] Client connected:', socket.id);
 
         // The frontend currently calls `socket.emit('join_room', sessionId)`
         // - a bare string, not an object - since only playerApp.js/
@@ -75,8 +73,6 @@ function initSocket(io) {
             socket.data.playerId = playerId;
             socket.join(sessionId);
 
-            console.log(`[SocketService] Socket ${socket.id} joined room ${sessionId}${playerId ? ` as ${playerId}` : ' (no playerId - spectator/admin)'}`);
-
             if (playerId) {
                 const key = disconnectKey(sessionId, playerId);
                 if (pendingDisconnects[key]) {
@@ -89,7 +85,6 @@ function initSocket(io) {
 
         socket.on('disconnect', () => {
             const { sessionId, playerId } = socket.data || {};
-            console.log('[SocketService] Client disconnected:', socket.id, sessionId, playerId);
             // Sockets with no known playerId (admin/spectator, or a player
             // whose join_room hasn't landed yet) are skipped - nothing to
             // mark inactive.
@@ -270,7 +265,6 @@ function broadcastBonusResult(sessionId, data) {
         return false;
     }
     ioInstance.to(sessionId).emit('bonus_result', data);
-    console.log(`[SocketService] Broadcast bonus_result to ${sessionId}`);
 
     if (data.bonusRoundId) clearBonusExpiry(data.bonusRoundId);
     return true;
@@ -282,7 +276,6 @@ function broadcastGameEvent(sessionId, event, data) {
         return false;
     }
     ioInstance.to(sessionId).emit(event, data);
-    console.log(`[SocketService] Broadcast ${event} to ${sessionId}`);
     return true;
 }
 

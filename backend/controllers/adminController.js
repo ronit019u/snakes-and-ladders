@@ -116,6 +116,7 @@ function adminCreateRoom(req, res) {
             winnerId: null,
             maxPlayers: 25,
             usedQuestionIds: [],
+            triggeredBonusTiles: [],
             players: [],
             presets: selectedPreset
         };

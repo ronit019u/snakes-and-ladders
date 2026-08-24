@@ -89,14 +89,17 @@ function checkTileBonusTrigger(session, player, sessionId, socketService, bonusC
     if (currentTile < 10 || currentTile >= 100) return false;
 
     const tileGroup = Math.floor(currentTile / 10) * 10;
-    const triggered = session.triggeredBonusTiles || [];
-    if (triggered.includes(tileGroup)) return false;
+    
+    // 确保 triggeredBonusTiles 是数组
+    if (!session.triggeredBonusTiles) {
+        session.triggeredBonusTiles = [];
+    }
+    // 直接用 session.triggeredBonusTiles，不用 triggered 变量
+    if (session.triggeredBonusTiles.includes(tileGroup)) return false;
 
-    // 传入外部 db，确保修改在同一个对象上
     const result = bonusController.startBonusRoundLogicOnly(sessionId, db);
     if (result.code === 0) {
         session.triggeredBonusTiles.push(tileGroup);
-        // 不写库，由调用者统一 writeDB
         socketService.broadcastGameEvent(sessionId, 'bonus_round_started', result.data);
         socketService.scheduleBonusExpiry(sessionId, result.data.bonusRoundId);
         return true;

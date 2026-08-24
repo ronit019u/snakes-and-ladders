@@ -1,3 +1,8 @@
+Changelog – 2026-08-24
+initialize triggeredBonusTiles and add defensive check in checkTileBonusTrigger
+Removed debug console.log statements from backend (socketService, gameController) to clean up output; retained console.error and console.warn for error tracking
+
+
 Changelog – 2026-08-20
 Added req.body.playerId / req.body.sessionId fallback in move, useItem, validateAnswer, and submitBonusAnswer to support bot requests without session cookies.
 Released activeBonusRounds entry immediately after a correct bonus‑round answer (expireBonusRound) to allow subsequent bonus rounds to trigger.
