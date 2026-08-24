@@ -195,13 +195,26 @@ function submitBonusAnswer(req, res) {
         const isCorrect = selectedOption === question.correctAnswer;
 
         if (!isCorrect) {
-            // 扣分惩罚：后退2步
+            // End the bonus immediately on the first wrong answer so the round
+            // cannot linger until another player answers correctly or the
+            // timeout fires.
             const penalty = session.presets?.bonus?.penaltySteps || 2;
             player.currentTile = Math.max(1, player.currentTile - penalty);
+            expireBonusRound(bonusRoundId);
             writeDB(db);
+
+            socketService.broadcastGameEvent(sessionId, 'bonus_round_expired', {
+                bonusRoundId: bonusRoundId,
+                reason: 'incorrect_answer',
+                playerId: playerId,
+                username: player.username,
+                penalty: penalty,
+                activePlayers: buildPublicPlayerList(session)
+            });
+
             return res.json({
                 code: 0,
-                data: { correct: false, penalty: penalty },
+                data: { correct: false, penalty: penalty, ended: true },
                 msg: `Incorrect answer, moved back ${penalty} steps`
             });
         }
