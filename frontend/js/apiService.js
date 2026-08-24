@@ -82,7 +82,8 @@ export const AdminAPI = {
   createRoom: (username, presetId) => apiPost('/api/admin/create', { username, presetId }),
   uploadQuestions: (formData) => apiPost('/api/admin/questions/upload', formData, true),
   savePreset: (presetId, presets, sessionId) => apiPost('/api/admin/presets', { presetId, presets, sessionId }),
-  loadPreset: (presetId) => apiPost('/api/admin/presets', { presetId })
+  loadPreset: (presetId) => apiPost('/api/admin/presets', { presetId }),
+  listPresets: () => apiGet('/api/admin/presets')
 };
 
 // ---------- Bot endpoints (used only by js/botManager.js) ----------

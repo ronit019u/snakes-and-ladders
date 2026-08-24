@@ -276,6 +276,7 @@ function broadcastGameEvent(sessionId, event, data) {
         return false;
     }
     ioInstance.to(sessionId).emit(event, data);
+    if (event === 'bonus_round_expired' && data?.bonusRoundId) clearBonusExpiry(data.bonusRoundId);
     return true;
 }
 
@@ -285,5 +286,6 @@ module.exports = {
     broadcastGameEvent,
     startSessionTimers,
     stopSessionTimers,
-    scheduleBonusExpiry
+    scheduleBonusExpiry,
+    clearBonusExpiry
 };

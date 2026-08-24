@@ -21,6 +21,7 @@ let boardTileEls = null;
 let prevPlayers = null;
 let leaderboardCount = 5;
 let bonusTimeoutSecs = 15;
+let sessionStartedAt = null;
 let iAmFinished = false;
 
 const $ = id => document.getElementById(id);
@@ -156,8 +157,9 @@ async function pollState() {
   if (!sessionId) return;
   const r = await GameAPI.getState(sessionId);
   if (r.code !== 0) return;
-  const { gameStatus, activePlayers, winnerId, leaderboardDisplayCount, presets } = r.data;
+  const { gameStatus, activePlayers, winnerId, leaderboardDisplayCount, presets, startedAt } = r.data;
 
+  sessionStartedAt = startedAt || sessionStartedAt;
   leaderboardCount = leaderboardDisplayCount || presets?.leaderboardDisplayCount || 5;
   bonusTimeoutSecs = presets?.bonusTimeout || 15;
 
@@ -189,7 +191,7 @@ function handleGameOver(data) {
     .sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt));
   const medals = ['🥇', '🥈', '🥉'];
   const podium = finishers.length
-    ? finishers.map((p, i) => `${medals[i] || '🏅'} ${p.username}`).join('&nbsp;&nbsp;')
+    ? finishers.map((p, i) => `${medals[i] || '🏅'} ${p.username} (${formatFinishTime(p)})`).join('&nbsp;&nbsp;')
     : (data.winnerId || 'unknown');
   showMsg('game-msg', `🏆 Game over! ${podium}`, true);
   $('game-status-label').innerText = 'Completed';
@@ -214,6 +216,16 @@ function enterGameScreen(presets) {
   prevPlayers = null;
 }
 
+function formatFinishTime(player) {
+  if (!sessionStartedAt || !player.completedAt) return 'Finished';
+  const elapsedMs = new Date(player.completedAt) - new Date(sessionStartedAt);
+  if (!Number.isFinite(elapsedMs) || elapsedMs < 0) return 'Finished';
+  const totalSeconds = Math.floor(elapsedMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
 function renderGame(players, oldPlayers = null) {
   renderTokens(players, oldPlayers);
   const sorted = [...players].sort((a, b) => {
@@ -225,13 +237,13 @@ function renderGame(players, oldPlayers = null) {
   const topN = sorted.slice(0, leaderboardCount);
   const myRank = sorted.findIndex(p => p.playerId === playerId) + 1;
   const rowHtml = (p, i) => {
-    const status = p.completedAt ? '🏁 Finished' : `Tile ${p.currentTile}`;
+    const status = p.completedAt ? `🏁 ${formatFinishTime(p)}` : `Tile ${p.currentTile}`;
     return `<div class="leaderboard-row"><span>#${i+1} ${p.username}</span><span>${status}</span></div>`;
   };
   let html = topN.map((p, i) => rowHtml(p, i)).join('');
   if (myRank > leaderboardCount) {
     const me = sorted[myRank - 1];
-    html += `<div class="leaderboard-row" style="border-top:1px solid #334155;margin-top:4px;padding-top:4px;color:#38bdf8;"><span>#${myRank} ${me.username} (you)</span><span>${me.completedAt ? '🏁 Finished' : `Tile ${me.currentTile}`}</span></div>`;
+    html += `<div class="leaderboard-row" style="border-top:1px solid #334155;margin-top:4px;padding-top:4px;color:#38bdf8;"><span>#${myRank} ${me.username} (you)</span><span>${me.completedAt ? `🏁 ${formatFinishTime(me)}` : `Tile ${me.currentTile}`}</span></div>`;
   }
   $('leaderboard').innerHTML = html;
 }
@@ -360,7 +372,9 @@ function closeBonusOverlay() {
 
 function handleBonusExpired(data) {
   if (!currentBonus || currentBonus.bonusRoundId !== data.bonusRoundId) return;
-  $('bonus-result').innerText = '⌛ Time\'s up — no one answered.';
+  $('bonus-result').innerText = data.reason === 'incorrect_answer'
+    ? `❌ ${data.username || 'A player'} answered wrong — bonus round ended.`
+    : '⌛ Time\'s up — no one answered.';
   setTimeout(closeBonusOverlay, 1500);
 }
 

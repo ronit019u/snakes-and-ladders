@@ -85,6 +85,7 @@ async function handleLogin() {
   if (r.code !== 0) return showMsg('login-msg', r.msg, false);
 
   showMsg('login-msg', 'Logged in as ' + r.data.adminName, true);
+  await refreshPresetSelect();
   $('setup-card').classList.remove('hidden');
   $('preset-card').classList.remove('hidden');
   $('question-card').classList.remove('hidden');
@@ -230,13 +231,13 @@ async function handleSavePreset() {
   if (!presetId) return showMsg('preset-msg', 'Enter a preset ID first', false);
   const r = await AdminAPI.savePreset(presetId, collectPresetPayload(), sessionId || undefined);
   showMsg('preset-msg', r.msg, r.code === 0);
-  if (r.code === 0) syncPresetSelect(presetId);
+  if (r.code === 0) await refreshPresetSelect(presetId);
 }
 
 // preset-select only ever shipped with a hardcoded "default" option, so a
 // saved preset was never actually usable at room-creation time unless you
 // remembered to add it to the dropdown yourself. Keep them in sync instead.
-function syncPresetSelect(presetId) {
+function syncPresetSelect(presetId, displayName = presetId) {
   const select = $('preset-select');
   let opt = [...select.options].find(o => o.value === presetId);
   if (!opt) {
@@ -244,8 +245,31 @@ function syncPresetSelect(presetId) {
     opt.value = presetId;
     select.appendChild(opt);
   }
-  opt.innerText = presetId;
+  opt.innerText = displayName || presetId;
   select.value = presetId;
+}
+
+async function refreshPresetSelect(selectedPresetId = $('preset-select').value || 'default') {
+  const r = await AdminAPI.listPresets();
+  if (r.code !== 0) {
+    showMsg('preset-msg', r.msg, false);
+    return;
+  }
+
+  const select = $('preset-select');
+  select.innerHTML = '';
+  (r.data?.presets || []).forEach(({ presetId, displayName }) => {
+    const opt = document.createElement('option');
+    opt.value = presetId;
+    opt.innerText = displayName || presetId;
+    select.appendChild(opt);
+  });
+
+  if ([...select.options].some(o => o.value === selectedPresetId)) {
+    select.value = selectedPresetId;
+  } else if (select.options.length) {
+    select.value = select.options[0].value;
+  }
 }
 
 async function handleLoadPreset() {
