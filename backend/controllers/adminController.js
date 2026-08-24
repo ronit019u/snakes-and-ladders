@@ -289,6 +289,7 @@ function uploadQuestions(req, res) {
             });
 
             db.questions.push(...newQuestions);
+            writeDB(db);
 
             return res.json({
                 code: 0,
@@ -308,6 +309,7 @@ function uploadQuestions(req, res) {
             });
 
             db.questions = newQuestions;
+            writeDB(db);
 
             return res.json({
                 code: 0,

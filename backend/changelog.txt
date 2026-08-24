@@ -1,6 +1,8 @@
 Changelog – 2026-08-24
 initialize triggeredBonusTiles and add defensive check in checkTileBonusTrigger
 Removed debug console.log statements from backend (socketService, gameController) to clean up output; retained console.error and console.warn for error tracking
+Fixed question bank append operation not persisting to db.json (added missing writeDB call).
+Added console log for dice roll value to assist frontend animation debugging.
 
 
 Changelog – 2026-08-20

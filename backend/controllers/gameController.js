@@ -471,6 +471,7 @@ function move(req, res) {
 
         // ---------- 模式1：掷骰子 ----------
         const diceValue = gameLogic.generateDiceValue();
+        console.log(`[Dice] Player ${player.username} (${playerId}) rolled: ${diceValue}`);
         const landingTile = gameLogic.calculateLandingTile(player.currentTile, diceValue);
 
         if (landingTile > 100) {
