@@ -9,8 +9,21 @@ import { spawnBots, stopBots, setBotStatusListener } from './botManager.js';
 
 let sessionId = null;
 let pollTimer = null;
+let sessionStartedAt = null;
 
 const $ = (id) => document.getElementById(id);
+
+// Renders a completedAt/startedAt gap as "m:ss". Falls back to '' if either
+// timestamp is missing so callers can decide how to degrade gracefully.
+function formatDuration(startIso, endIso) {
+  if (!startIso || !endIso) return '';
+  const ms = new Date(endIso) - new Date(startIso);
+  if (!Number.isFinite(ms) || ms < 0) return '';
+  const totalSec = Math.floor(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
 
 function showMsg(elId, text, ok) {
   $(elId).innerHTML = `<div class="msg ${ok ? 'ok' : 'err'}">${text}</div>`;
@@ -70,7 +83,10 @@ function handleGameOver(data) {
     .sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt));
   const medals = ['🥇', '🥈', '🥉'];
   const podium = finishers.length
-    ? finishers.map((p, i) => `${medals[i] || '🏅'} ${p.username}`).join('&nbsp;&nbsp;')
+    ? finishers.map((p, i) => {
+        const t = formatDuration(sessionStartedAt, p.completedAt);
+        return `${medals[i] || '🏅'} ${p.username}${t ? ` (${t})` : ''}`;
+      }).join('&nbsp;&nbsp;')
     : (data.winnerId || 'unknown');
   showMsg('setup-msg', `🏆 Game complete. ${podium}`, true);
 }
@@ -88,6 +104,7 @@ async function handleLogin() {
   $('setup-card').classList.remove('hidden');
   $('preset-card').classList.remove('hidden');
   $('question-card').classList.remove('hidden');
+  refreshPresetDropdown();
 }
 
 // ---------- Create room ----------
@@ -147,6 +164,7 @@ async function pollState() {
     return;
   }
 
+  if (r.data.startedAt) sessionStartedAt = r.data.startedAt;
   renderRoster(r.data.activePlayers);
 
   if (r.data.gameStatus === 'InProgress') {
@@ -169,7 +187,14 @@ async function pollState() {
 function renderRoster(players) {
   $('player-count').innerText = players.length;
   $('player-list').innerHTML = players
-    .map((p) => `<div class="player-row"><span><span class="swatch" style="background:${p.tokenColor}"></span>${p.username}</span><span>${p.completedAt ? '🏁 Finished' : `Tile ${p.currentTile}`}</span></div>`)
+    .map((p) => {
+      let status = `Tile ${p.currentTile}`;
+      if (p.completedAt) {
+        const t = formatDuration(sessionStartedAt, p.completedAt);
+        status = `🏁 ${t || 'Finished'}`;
+      }
+      return `<div class="player-row"><span><span class="swatch" style="background:${p.tokenColor}"></span>${p.username}</span><span>${status}</span></div>`;
+    })
     .join('');
 }
 
@@ -230,22 +255,36 @@ async function handleSavePreset() {
   if (!presetId) return showMsg('preset-msg', 'Enter a preset ID first', false);
   const r = await AdminAPI.savePreset(presetId, collectPresetPayload(), sessionId || undefined);
   showMsg('preset-msg', r.msg, r.code === 0);
-  if (r.code === 0) syncPresetSelect(presetId);
+  if (r.code === 0) await refreshPresetDropdown(presetId);
 }
 
-// preset-select only ever shipped with a hardcoded "default" option, so a
-// saved preset was never actually usable at room-creation time unless you
-// remembered to add it to the dropdown yourself. Keep them in sync instead.
-function syncPresetSelect(presetId) {
+// preset-select used to only ever ship with a hardcoded "default" option, so
+// a saved preset was never actually usable at room-creation time unless you
+// remembered to add it to the dropdown yourself. AdminAPI.listPresets() now
+// gives us the real list, so pull from that instead of hand-syncing.
+function populatePresetSelect(presets, selectId) {
   const select = $('preset-select');
-  let opt = [...select.options].find(o => o.value === presetId);
-  if (!opt) {
-    opt = document.createElement('option');
-    opt.value = presetId;
+  const previousValue = select.value;
+  select.innerHTML = '';
+  (presets || []).forEach((p) => {
+    const opt = document.createElement('option');
+    opt.value = p.presetId;
+    opt.innerText = p.displayName || p.presetId;
     select.appendChild(opt);
+  });
+  const wanted = selectId || previousValue;
+  if (wanted && [...select.options].some(o => o.value === wanted)) {
+    select.value = wanted;
   }
-  opt.innerText = presetId;
-  select.value = presetId;
+}
+
+async function refreshPresetDropdown(selectId) {
+  const r = await AdminAPI.listPresets();
+  if (r.code !== 0) {
+    console.warn('[adminApp] failed to load preset list:', r.msg);
+    return;
+  }
+  populatePresetSelect(r.data.presets, selectId);
 }
 
 async function handleLoadPreset() {
@@ -294,7 +333,7 @@ async function handleLoadPreset() {
   $('p-item-arrow-steps').value = p.items?.arrow?.steps ?? 3;
 
   showMsg('preset-msg', `Loaded preset '${presetId}'`, true);
-  syncPresetSelect(presetId);
+  await refreshPresetDropdown(presetId);
 }
 
 // ---------- Question upload ----------

@@ -22,8 +22,20 @@ let prevPlayers = null;
 let leaderboardCount = 5;
 let bonusTimeoutSecs = 15;
 let iAmFinished = false;
+let sessionStartedAt = null;
 
 const $ = id => document.getElementById(id);
+
+// Renders a completedAt/startedAt gap as "m:ss".
+function formatDuration(startIso, endIso) {
+  if (!startIso || !endIso) return '';
+  const ms = new Date(endIso) - new Date(startIso);
+  if (!Number.isFinite(ms) || ms < 0) return '';
+  const totalSec = Math.floor(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
 
 function showMsg(elId, text, ok) {
   $(elId).innerHTML = `<div class="msg ${ok ? 'ok' : 'err'}">${text}</div>`;
@@ -156,8 +168,9 @@ async function pollState() {
   if (!sessionId) return;
   const r = await GameAPI.getState(sessionId);
   if (r.code !== 0) return;
-  const { gameStatus, activePlayers, winnerId, leaderboardDisplayCount, presets } = r.data;
+  const { gameStatus, activePlayers, winnerId, leaderboardDisplayCount, presets, startedAt } = r.data;
 
+  if (startedAt) sessionStartedAt = startedAt;
   leaderboardCount = leaderboardDisplayCount || presets?.leaderboardDisplayCount || 5;
   bonusTimeoutSecs = presets?.bonusTimeout || 15;
 
@@ -189,7 +202,10 @@ function handleGameOver(data) {
     .sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt));
   const medals = ['🥇', '🥈', '🥉'];
   const podium = finishers.length
-    ? finishers.map((p, i) => `${medals[i] || '🏅'} ${p.username}`).join('&nbsp;&nbsp;')
+    ? finishers.map((p, i) => {
+        const t = formatDuration(sessionStartedAt, p.completedAt);
+        return `${medals[i] || '🏅'} ${p.username}${t ? ` (${t})` : ''}`;
+      }).join('&nbsp;&nbsp;')
     : (data.winnerId || 'unknown');
   showMsg('game-msg', `🏆 Game over! ${podium}`, true);
   $('game-status-label').innerText = 'Completed';
@@ -224,14 +240,18 @@ function renderGame(players, oldPlayers = null) {
   });
   const topN = sorted.slice(0, leaderboardCount);
   const myRank = sorted.findIndex(p => p.playerId === playerId) + 1;
+  const statusFor = (p) => {
+    if (!p.completedAt) return `Tile ${p.currentTile}`;
+    const t = formatDuration(sessionStartedAt, p.completedAt);
+    return `🏁 ${t || 'Finished'}`;
+  };
   const rowHtml = (p, i) => {
-    const status = p.completedAt ? '🏁 Finished' : `Tile ${p.currentTile}`;
-    return `<div class="leaderboard-row"><span>#${i+1} ${p.username}</span><span>${status}</span></div>`;
+    return `<div class="leaderboard-row"><span>#${i+1} ${p.username}</span><span>${statusFor(p)}</span></div>`;
   };
   let html = topN.map((p, i) => rowHtml(p, i)).join('');
   if (myRank > leaderboardCount) {
     const me = sorted[myRank - 1];
-    html += `<div class="leaderboard-row" style="border-top:1px solid #334155;margin-top:4px;padding-top:4px;color:#38bdf8;"><span>#${myRank} ${me.username} (you)</span><span>${me.completedAt ? '🏁 Finished' : `Tile ${me.currentTile}`}</span></div>`;
+    html += `<div class="leaderboard-row" style="border-top:1px solid #334155;margin-top:4px;padding-top:4px;color:#38bdf8;"><span>#${myRank} ${me.username} (you)</span><span>${statusFor(me)}</span></div>`;
   }
   $('leaderboard').innerHTML = html;
 }
@@ -247,9 +267,20 @@ async function handleRoll() {
     const diceValue = result.data.diceValue;
     await playDiceAnimation(diceValue);
     if (result.data.itemGranted) {
-      localInventory.push(result.data.itemGranted);
+      // The backend reports itemGranted (what the tile rolled) even when the
+      // grant was blocked because the inventory was already full at 3 — the
+      // authoritative post-move array is result.data.inventory. Sync from
+      // that instead of blindly pushing, or a blocked item would still show
+      // up locally and "reappear" once a real slot opened up later.
+      const prevCount = localInventory.length;
+      if (Array.isArray(result.data.inventory)) {
+        localInventory = [...result.data.inventory];
+      }
+      const wasAdded = localInventory.length > prevCount;
       renderInventory();
-      showMsg('game-msg', `🎁 You received: ${result.data.itemGranted}`, true);
+      showMsg('game-msg', wasAdded
+        ? `🎁 You received: ${result.data.itemGranted}`
+        : `🎒 Inventory full — ${result.data.itemGranted} was lost!`, wasAdded);
     }
     if (result.data.needsQuiz) {
       openQuiz();
@@ -294,7 +325,7 @@ async function openQuiz() {
 
 async function submitQuizAnswer(letter) {
   if (currentQuiz.timerHandle) clearInterval(currentQuiz.timerHandle);
-  document.querySelectorAll('.quiz-opt').forEach(b => b.disabled = true);
+  document.querySelectorAll('#quiz-options .quiz-opt').forEach(b => b.disabled = true);
   const optionToSend = letter || 'A';
   const result = await QuestionAPI.validate(currentQuiz.questionId, optionToSend);
   if (result.code !== 0) {
@@ -342,14 +373,25 @@ function openBonusRound(data) {
   }, 1000);
 }
 
+// Answering wrong (or correct-but-too-late) never ends the round for this
+// player — the overlay stays open and locked. The round only actually ends
+// when the 'bonus_result' (someone answered correctly) or
+// 'bonus_round_expired' (timer ran out) socket event arrives — see
+// closeBonusOverlay(), handleBonusResult(), handleBonusExpired() below.
 async function submitBonusAnswer(letter) {
   if (!currentBonus) return;
   document.querySelectorAll('#bonus-options .quiz-opt').forEach(b => b.disabled = true);
   const result = await BonusAPI.submitAnswer(currentBonus.bonusRoundId, letter);
   if (handleApiError(result, 'bonus-result')) return;
-  $('bonus-result').innerText = result.data?.correct
-    ? '✅ Correct! Waiting for confirmation…'
-    : `❌ Wrong — knocked back ${result.data?.penalty ?? ''} steps.`;
+
+  if (result.data?.correct && result.data?.winner === false) {
+    // Someone else's answer beat this one to the server by a hair.
+    $('bonus-result').innerText = '⏱️ Correct, but someone else answered first — waiting for the round to end…';
+  } else if (result.data?.correct) {
+    $('bonus-result').innerText = '✅ Correct! Waiting for confirmation…';
+  } else {
+    $('bonus-result').innerText = `❌ Wrong — knocked back ${result.data?.penalty ?? ''} steps. Waiting for the round to end…`;
+  }
 }
 
 function closeBonusOverlay() {
@@ -368,13 +410,30 @@ function handleBonusResult(data) {
   const wasMine = currentBonus && currentBonus.bonusRoundId === data.bonusRoundId;
   const isItem = data.bonusType === 'item_grant';
   const reward = isItem ? `item: ${ITEM_ICONS[data.bonusValue] || ''} ${data.bonusValue}` : `+${data.bonusValue} steps`;
-  showMsg('game-msg', `🎉 Bonus won by ${data.winnerUsername} (${reward})`, true);
+
+  // This response doesn't include an authoritative inventory array to sync
+  // from (unlike the dice-roll move response), so mirror the backend's own
+  // guard here: it only pushes the reward when the inventory has room for
+  // it (length < 3). As long as localInventory stays accurate elsewhere,
+  // this predicts the backend's decision correctly and avoids "phantom"
+  // items that were actually blocked server-side from appearing later.
+  let inventoryFull = false;
   if (data.winnerPlayerId === playerId && isItem) {
-    localInventory.push(data.bonusValue);
-    renderInventory();
+    if (localInventory.length < 3) {
+      localInventory.push(data.bonusValue);
+      renderInventory();
+    } else {
+      inventoryFull = true;
+    }
   }
+
+  const fullNote = (data.winnerPlayerId === playerId && inventoryFull) ? ' — inventory full, item lost!' : '';
+  showMsg('game-msg', `🎉 Bonus won by ${data.winnerUsername} (${reward})${fullNote}`, true);
+
   if (wasMine) {
-    $('bonus-result').innerText = data.winnerPlayerId === playerId ? '✅ You won it!' : `🏆 ${data.winnerUsername} got it first.`;
+    $('bonus-result').innerText = data.winnerPlayerId === playerId
+      ? (inventoryFull ? '✅ You won it, but your inventory was full — item lost!' : '✅ You won it!')
+      : `🏆 ${data.winnerUsername} got it first.`;
     setTimeout(closeBonusOverlay, 1500);
   }
 }
