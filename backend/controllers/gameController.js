@@ -316,11 +316,11 @@ function start(req, res) {
         }
 
         const activePlayers = session.players.filter(p => p.turnStatus === 'active');
-        if (activePlayers.length < 2) {
+        if (activePlayers.length < 1) {
             return res.json({
                 code: 2018,
                 data: null,
-                msg: 'At least 2 active players required to start the game'
+                msg: 'At least 1 active players required to start the game'
             });
         }
 
