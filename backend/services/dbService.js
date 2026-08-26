@@ -102,6 +102,26 @@ function writeDB(data) {
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
 }
+// [NEW] 生成 4 位随机数字房间号（0001–9999）
+const MAX_ROOM_ID = 9999;
+const MAX_RETRIES = 1000;
+
+function generateRoomId(db) {
+    const usedIds = new Set(Object.keys(db.sessions).map(Number));
+    
+    if (usedIds.size >= MAX_ROOM_ID) {
+        throw new Error('No available room ID (max 9999 rooms)');
+    }
+    
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        const num = Math.floor(Math.random() * MAX_ROOM_ID) + 1; // 1–9999
+        if (!usedIds.has(num)) {
+            return String(num).padStart(4, '0');
+        }
+    }
+    
+    throw new Error('Failed to generate unique room ID');
+}
 
 // 根据 sessionId 查找会话
 function findSession(sessionId) {
@@ -122,5 +142,6 @@ module.exports = {
   writeDB,
   generateId,
   findSession,
-  findPlayer
+  findPlayer,
+  generateRoomId 
 };

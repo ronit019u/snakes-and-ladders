@@ -1,5 +1,5 @@
 // controllers/gameController.js
-const { readDB, writeDB, generateId } = require('../services/dbService');
+const { readDB, writeDB, generateId, generateRoomId } = require('../services/dbService');
 const gameLogic = require('../services/gameLogic');
 const bonusController = require('../controllers/bonusController');
 const socketService = require('../services/socketService');
@@ -50,11 +50,11 @@ function create(req, res) {
 
         const finalUsername = username?.trim() || `Player_${generateId().slice(0, 4)}`;
 
-        const sessionId = generateId();
         const playerId = 'p' + generateId();
 
         const db = readDB();
 
+        const sessionId = generateRoomId(db);
         if (db.sessions[sessionId]) {
             return res.json({
                 code: 5000,

@@ -1,5 +1,5 @@
 // controllers/adminController.js
-const { readDB, writeDB, generateId } = require('../services/dbService');
+const { readDB, writeDB, generateId, generateRoomId } = require('../services/dbService');
 const { DEFAULT_PRESET, getPreset } = require('../services/gameLogic');
 const XLSX = require('xlsx');
 const iconv = require('iconv-lite');
@@ -93,7 +93,8 @@ function adminCreateRoom(req, res) {
             }
         }
 
-        const sessionId = generateId();
+
+        const sessionId = generateRoomId(db);
         const adminPlayerId = 'admin_' + generateId();
 
         // 检查 sessionId 冲突
