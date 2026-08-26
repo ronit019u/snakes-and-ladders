@@ -1,3 +1,6 @@
+Changelog – 2026-08-27
+Changed tile-based bonus trigger from "any player" to "≥50% of active players" to better serve the catch-up mechanic and support variable player counts (2–25).
+
 Changelog – 2026-08-24
 initialize triggeredBonusTiles and add defensive check in checkTileBonusTrigger
 Removed debug console.log statements from backend (socketService, gameController) to clean up output; retained console.error and console.warn for error tracking

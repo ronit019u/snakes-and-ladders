@@ -89,13 +89,17 @@ function checkTileBonusTrigger(session, player, sessionId, socketService, bonusC
     if (currentTile < 10 || currentTile >= 100) return false;
 
     const tileGroup = Math.floor(currentTile / 10) * 10;
-    
-    // 确保 triggeredBonusTiles 是数组
-    if (!session.triggeredBonusTiles) {
-        session.triggeredBonusTiles = [];
-    }
-    // 直接用 session.triggeredBonusTiles，不用 triggered 变量
+    if (!session.triggeredBonusTiles) session.triggeredBonusTiles = [];
     if (session.triggeredBonusTiles.includes(tileGroup)) return false;
+
+    // 获取活跃玩家（排除已完成和掉线）
+    const activePlayers = session.players.filter(p => p.turnStatus === 'active' && !p.completedAt);
+    // 50% 阈值，向上取整，至少 1 人
+    const threshold = Math.max(1, Math.ceil(activePlayers.length * 0.5));
+    
+    // 到达该区段的玩家数量
+    const reachedCount = activePlayers.filter(p => p.currentTile >= tileGroup).length;
+    if (reachedCount < threshold) return false;
 
     const result = bonusController.startBonusRoundLogicOnly(sessionId, db);
     if (result.code === 0) {
