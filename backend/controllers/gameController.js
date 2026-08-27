@@ -356,63 +356,41 @@ function start(req, res) {
 }
 
 // ---------- POST /api/game/move ----------
+// ---------- POST /api/game/move ----------
 function move(req, res) {
     try {
         const playerId = req.session.playerId || req.body.playerId;
         const sessionId = req.session.sessionId || req.body.sessionId;
-        const { targetTile } = req.body;
+        const { targetTile, questionId, selectedOption } = req.body;
 
+        // 1. 验证身份
         if (!playerId || !sessionId) {
-            return res.json({
-                code: 2004,
-                data: null,
-                msg: 'Player not in a session'
-            });
+            return res.json({ code: 2004, data: null, msg: 'Player not in a session' });
         }
 
         const db = readDB();
         const session = db.sessions[sessionId];
         if (!session) {
-            return res.json({
-                code: 2003,
-                data: null,
-                msg: 'Session not found'
-            });
+            return res.json({ code: 2003, data: null, msg: 'Session not found' });
         }
 
         if (session.gameStatus !== 'InProgress') {
-            return res.json({
-                code: 2008,
-                data: null,
-                msg: 'Game is not in progress'
-            });
+            return res.json({ code: 2008, data: null, msg: 'Game is not in progress' });
         }
 
         const player = session.players.find(p => p.playerId === playerId);
         if (!player) {
-            return res.json({
-                code: 2004,
-                data: null,
-                msg: 'Player not found'
-            });
+            return res.json({ code: 2004, data: null, msg: 'Player not found' });
         }
 
         if (player.completedAt) {
-            return res.json({
-                code: 2020,
-                data: null,
-                msg: 'Player already finished the game'
-            });
+            return res.json({ code: 2020, data: null, msg: 'Player already finished the game' });
         }
 
-        // ---------- 模式2：答题后移动（带 targetTile） ----------
+        // ---------- 模式2：答题后移动（带 targetTile）---------- 
         if (targetTile !== undefined) {
             if (typeof targetTile !== 'number' || targetTile < 1 || targetTile > 100) {
-                return res.json({
-                    code: 2006,
-                    data: null,
-                    msg: 'Invalid target tile'
-                });
+                return res.json({ code: 2006, data: null, msg: 'Invalid target tile' });
             }
 
             player.currentTile = targetTile;
@@ -469,9 +447,54 @@ function move(req, res) {
             });
         }
 
-        // ---------- 模式1：掷骰子 ----------
+        // ---------- 模式1：掷骰子（需要先答题验证） ----------
+        
+        // 如果带了答案 → 验证答案
+        if (questionId && selectedOption) {
+            const question = db.questions.find(q => q.questionId === questionId);
+            if (!question) {
+                return res.json({ code: 5000, data: null, msg: 'Question not found' });
+            }
+
+            const isCorrect = selectedOption === question.correctAnswer;
+            if (!isCorrect) {
+                return res.json({
+                    code: 0,
+                    data: { correct: false },
+                    msg: 'Incorrect answer. Try again.'
+                });
+            }
+
+            // 答对了，继续执行掷骰（不返回，继续往下走）
+        } else {
+            // 没带答案 → 返回题目要求答题
+            const usedIds = session.usedQuestionIds || [];
+            const availableQuestions = db.questions.filter(q => !usedIds.includes(q.questionId));
+
+            if (availableQuestions.length === 0) {
+                // 没有题目了，降级为普通掷骰（继续往下走）
+                // 不返回，继续执行掷骰
+            } else {
+                const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+                const selected = availableQuestions[randomIndex];
+                session.usedQuestionIds.push(selected.questionId);
+                writeDB(db);
+
+                return res.json({
+                    code: 0,
+                    data: {
+                        needQuiz: true,
+                        questionId: selected.questionId,
+                        questionText: selected.questionText,
+                        options: selected.options
+                    },
+                    msg: 'Answer the question before rolling'
+                });
+            }
+        }
+
+        // ---------- 执行掷骰 ----------
         const diceValue = gameLogic.generateDiceValue();
-        console.log(`[Dice] Player ${player.username} (${playerId}) rolled: ${diceValue}`);
         const landingTile = gameLogic.calculateLandingTile(player.currentTile, diceValue);
 
         if (landingTile > 100) {
@@ -584,6 +607,7 @@ function move(req, res) {
                 });
             }
         }
+
         checkTileBonusTrigger(session, player, sessionId, socketService, bonusController, db);
         writeDB(db);
         socketService.broadcastGameEvent(sessionId, 'move_update', {
@@ -608,11 +632,7 @@ function move(req, res) {
 
     } catch (error) {
         console.error('[Move Error]', error);
-        return res.json({
-            code: 5000,
-            data: null,
-            msg: 'Internal server error'
-        });
+        return res.json({ code: 5000, data: null, msg: 'Internal server error' });
     }
 }
 
