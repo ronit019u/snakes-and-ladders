@@ -1,3 +1,7 @@
+Changelog – 2026-08-28
+Removed dice debug log from server console
+
+
 Changelog – 2026-08-27
 Changed tile-based bonus trigger from "any player" to "≥50% of active players" to better serve the catch-up mechanic and support variable player counts (2–25).
 Replaced long random string room IDs with 4‑digit numeric IDs (0001–9999).
