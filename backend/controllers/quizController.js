@@ -133,6 +133,19 @@ function validateAnswer(req, res) {
         // 6. 判断对错
         const isCorrect = selectedOption === question.correctAnswer;
 
+        if (req.session.pendingFlashTile) {
+            req.session.pendingFlashTile = false;
+            // 记录正确性，供 move 使用
+            req.session.flashCorrect = isCorrect;
+            return res.json({
+                code: 0,
+                data: {
+                    correct: isCorrect,
+                    targetTile: -1   // 特殊信号
+                },
+                msg: isCorrect ? 'Correct answer' : 'Incorrect answer'
+            });
+        }
         // 7. 计算 targetTile
         const currentTile = player.currentTile;
         const targetTile = gameLogic.calculateTargetTile(currentTile, isCorrect);

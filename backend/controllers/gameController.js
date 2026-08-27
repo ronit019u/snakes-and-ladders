@@ -356,6 +356,7 @@ function start(req, res) {
 }
 
 // ---------- POST /api/game/move ----------
+// ---------- POST /api/game/move ----------
 function move(req, res) {
     try {
         const playerId = req.session.playerId || req.body.playerId;
@@ -363,50 +364,71 @@ function move(req, res) {
         const { targetTile } = req.body;
 
         if (!playerId || !sessionId) {
-            return res.json({
-                code: 2004,
-                data: null,
-                msg: 'Player not in a session'
-            });
+            return res.json({ code: 2004, data: null, msg: 'Player not in a session' });
         }
 
         const db = readDB();
         const session = db.sessions[sessionId];
         if (!session) {
-            return res.json({
-                code: 2003,
-                data: null,
-                msg: 'Session not found'
-            });
+            return res.json({ code: 2003, data: null, msg: 'Session not found' });
         }
 
         if (session.gameStatus !== 'InProgress') {
-            return res.json({
-                code: 2008,
-                data: null,
-                msg: 'Game is not in progress'
-            });
+            return res.json({ code: 2008, data: null, msg: 'Game is not in progress' });
         }
 
         const player = session.players.find(p => p.playerId === playerId);
         if (!player) {
-            return res.json({
-                code: 2004,
-                data: null,
-                msg: 'Player not found'
-            });
+            return res.json({ code: 2004, data: null, msg: 'Player not found' });
         }
 
         if (player.completedAt) {
-            return res.json({
-                code: 2020,
-                data: null,
-                msg: 'Player already finished the game'
-            });
+            return res.json({ code: 2020, data: null, msg: 'Player already finished the game' });
         }
 
         // ---------- 模式2：答题后移动（带 targetTile） ----------
         if (targetTile !== undefined) {
+            // 闪光格特殊信号：-1（由 validateAnswer 在闪光格答题正确时返回）
+            if (targetTile === -1) {
+                const isCorrect = req.session.flashCorrect || false;
+                req.session.flashCorrect = undefined;
+
+                let itemGranted = null;
+                let msg = '';
+
+                if (isCorrect) {
+                    const effect = gameLogic.getFlashingTileEffect(player.currentTile, session.presets);
+                    if (effect.type === 'item') {
+                        itemGranted = effect.item;
+                        if (!player.inventory) player.inventory = [];
+                        if (player.inventory.length < 3) {
+                            player.inventory.push(itemGranted);
+                        }
+                        msg = itemGranted ? `🎉 You got a ${itemGranted}!` : 'Correct! No item this time.';
+                    } else {
+                        msg = 'Correct! No reward on this tile.';
+                    }
+                } else {
+                    msg = 'Wrong answer. No reward.';
+                }
+
+                writeDB(db);
+
+                return res.json({
+                    code: 0,
+                    data: {
+                        currentTile: player.currentTile,
+                        needsQuiz: false,
+                        gameStatus: session.gameStatus,
+                        winnerId: session.winnerId,
+                        itemGranted: itemGranted,
+                        inventory: player.inventory || []
+                    },
+                    msg: msg
+                });
+            }
+
+            // 普通蛇梯移动校验
             if (typeof targetTile !== 'number' || targetTile < 1 || targetTile > 100) {
                 return res.json({
                     code: 2006,
@@ -552,38 +574,44 @@ function move(req, res) {
         let itemGranted = null;
         let finalTile = landingTile;
 
+        // ---------- 处理闪光格 ----------
         if (isFlashing) {
-            const effect = gameLogic.getFlashingTileEffect(landingTile, session.presets);
-            if (effect.type === 'item') {
-                itemGranted = effect.item;
-                if (!player.inventory) player.inventory = [];
-                if (player.inventory.length < 3) {
-                    player.inventory.push(itemGranted);
+            const usedIds = session.usedQuestionIds || [];
+            const availableQuestions = db.questions.filter(q => !usedIds.includes(q.questionId));
+
+            if (availableQuestions.length === 0) {
+                // 没有题目了，直接给道具（降级）
+                const effect = gameLogic.getFlashingTileEffect(landingTile, session.presets);
+                if (effect.type === 'item') {
+                    itemGranted = effect.item;
+                    if (!player.inventory) player.inventory = [];
+                    if (player.inventory.length < 3) {
+                        player.inventory.push(itemGranted);
+                    }
                 }
-            } else if (effect.type === 'penalty') {
-                finalTile = Math.max(1, landingTile - effect.steps);
-                player.currentTile = finalTile;
+                // 继续执行后续流程（itemGranted 已赋值）
+            } else {
+                // 标记为闪光格，供 validate 识别
+                req.session.pendingFlashTile = true;
                 writeDB(db);
-                socketService.broadcastGameEvent(sessionId, 'move_update', {
-                    playerId,
-                    currentTile: finalTile,
-                    activePlayers: buildPublicPlayerList(session)
-                });
+
+                // 响应格式与蛇梯完全一致
                 return res.json({
                     code: 0,
                     data: {
-                        currentTile: finalTile,
-                        needsQuiz: false,
+                        currentTile: landingTile,
+                        needsQuiz: true,
                         gameStatus: session.gameStatus,
                         winnerId: session.winnerId,
                         itemGranted: null,
                         inventory: player.inventory || [],
                         diceValue: diceValue
                     },
-                    msg: `Landed on red flashing tile, moved back ${effect.steps} tiles`
+                    msg: 'Landed on flashing tile! Answer the question to get a reward.'
                 });
             }
         }
+
         checkTileBonusTrigger(session, player, sessionId, socketService, bonusController, db);
         writeDB(db);
         socketService.broadcastGameEvent(sessionId, 'move_update', {
@@ -603,16 +631,14 @@ function move(req, res) {
                 inventory: player.inventory || [],
                 diceValue: diceValue
             },
-            msg: isFlashing ? 'Landed on flashing tile' : 'success'
+            msg: isFlashing
+                ? (itemGranted ? `🎉 Got a ${itemGranted}!` : 'Landed on flashing tile, no reward.')
+                : 'success'
         });
 
     } catch (error) {
         console.error('[Move Error]', error);
-        return res.json({
-            code: 5000,
-            data: null,
-            msg: 'Internal server error'
-        });
+        return res.json({ code: 5000, data: null, msg: 'Internal server error' });
     }
 }
 
