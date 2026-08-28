@@ -60,6 +60,13 @@ export const GameAPI = {
   getState: (sessionId) => apiGet(`/api/game/state/${sessionId}`),
   start: () => apiPost('/api/game/start'),
   rollDice: () => apiPost('/api/game/move', {}),
+  // Preroll quiz: same /api/game/move endpoint as rollDice/finalizeMove, just
+  // with questionId + selectedOption in the body instead of an empty body or
+  // targetTile. A correct answer makes the server execute the roll and
+  // return the normal roll-result shape in the same response; a wrong
+  // answer returns { correct: false } and the caller retries with the same
+  // questionId. See botManager.js's answerPrerollQuizAsBot for the bot side.
+  submitRollQuiz: (questionId, selectedOption) => apiPost('/api/game/move', { questionId, selectedOption }),
   finalizeMove: (targetTile) => apiPost('/api/game/move', { targetTile }),
   useItem: (itemType, targetPlayerId) => apiPost('/api/game/item/use', { itemType, targetPlayerId }),
   disconnect: (sessionId, playerId) => apiPost('/api/game/player/disconnect', { sessionId, playerId })
@@ -105,10 +112,12 @@ export const AdminAPI = {
 // currently require the session cookie unconditionally, they need a small
 // (one-line each) change to also accept `req.body.playerId`. No other backend
 // changes are needed — bots use the exact same routes and socket events as
-// real players.
+// real players. submitRollQuiz follows the same pattern for the preroll-quiz
+// answer call, which is just another body shape on /api/game/move.
 export const BotAPI = {
   join: (sessionId, username) => apiPost('/api/game/join', { sessionId, username }, false, 'omit'),
   rollDice: (sessionId, playerId) => apiPost('/api/game/move', { sessionId, playerId }, false, 'omit'),
+  submitRollQuiz: (sessionId, playerId, questionId, selectedOption) => apiPost('/api/game/move', { sessionId, playerId, questionId, selectedOption }, false, 'omit'),
   finalizeMove: (sessionId, playerId, targetTile) => apiPost('/api/game/move', { sessionId, playerId, targetTile }, false, 'omit'),
   useItem: (sessionId, playerId, itemType, targetPlayerId) => apiPost('/api/game/item/use', { sessionId, playerId, itemType, targetPlayerId }, false, 'omit'),
   getRandomQuestion: (sessionId) => apiGet(`/api/question/random/${sessionId}`, 'omit'),

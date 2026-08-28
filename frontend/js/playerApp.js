@@ -257,6 +257,14 @@ function renderGame(players, oldPlayers = null) {
 }
 
 // ---------- Roll Dice ----------
+// Note the two quiz mechanisms in play here and how they're told apart:
+//  - result.data.needQuiz  (no "s") -> PREROLL quiz: gates the roll itself.
+//    The roll hasn't happened yet; the same POST /api/game/move call carries
+//    the question, and resubmitting it with questionId+selectedOption is
+//    what actually executes the roll once answered correctly.
+//  - result.data.needsQuiz (with "s") -> the existing snake/ladder quiz,
+//    unchanged: the roll already happened, landed on a snake/ladder tile,
+//    and openQuiz()/submitQuizAnswer() decide the post-quiz targetTile.
 async function handleRoll() {
   const btn = $('roll-btn');
   if (btn.disabled) return;
@@ -264,36 +272,106 @@ async function handleRoll() {
   try {
     const result = await GameAPI.rollDice();
     if (handleApiError(result)) return;
-    const diceValue = result.data.diceValue;
-    await playDiceAnimation(diceValue);
-    if (result.data.itemGranted) {
-      // The backend reports itemGranted (what the tile rolled) even when the
-      // grant was blocked because the inventory was already full at 3 — the
-      // authoritative post-move array is result.data.inventory. Sync from
-      // that instead of blindly pushing, or a blocked item would still show
-      // up locally and "reappear" once a real slot opened up later.
-      const prevCount = localInventory.length;
-      if (Array.isArray(result.data.inventory)) {
-        localInventory = [...result.data.inventory];
-      }
-      const wasAdded = localInventory.length > prevCount;
-      renderInventory();
-      showMsg('game-msg', wasAdded
-        ? `🎁 You received: ${result.data.itemGranted}`
-        : `🎒 Inventory full — ${result.data.itemGranted} was lost!`, wasAdded);
-    }
-    if (result.data.needsQuiz) {
-      openQuiz();
+    if (result.data.needQuiz) {
+      const rollResult = await runPrerollQuiz(result.data);
+      if (!rollResult) return; // overlay closed without a resolved roll (error mid-flow)
+      await applyRollResult(rollResult);
     } else {
-      showMsg('game-msg', result.msg, true);
+      await applyRollResult(result);
     }
-    await pollState();
   } finally {
     pollTimer = setInterval(pollState, 2000);
   }
 }
 
-// ---------- Quiz ----------
+// Handles a resolved roll result — same shape whether it came straight back
+// from GameAPI.rollDice() or from a correct preroll-quiz answer.
+async function applyRollResult(result) {
+  const diceValue = result.data.diceValue;
+  await playDiceAnimation(diceValue);
+  if (result.data.itemGranted) {
+    // The backend reports itemGranted (what the tile rolled) even when the
+    // grant was blocked because the inventory was already full at 3 — the
+    // authoritative post-move array is result.data.inventory. Sync from
+    // that instead of blindly pushing, or a blocked item would still show
+    // up locally and "reappear" once a real slot opened up later.
+    const prevCount = localInventory.length;
+    if (Array.isArray(result.data.inventory)) {
+      localInventory = [...result.data.inventory];
+    }
+    const wasAdded = localInventory.length > prevCount;
+    renderInventory();
+    showMsg('game-msg', wasAdded
+      ? `🎁 You received: ${result.data.itemGranted}`
+      : `🎒 Inventory full — ${result.data.itemGranted} was lost!`, wasAdded);
+  }
+  if (result.data.needsQuiz) {
+    openQuiz();
+  } else {
+    showMsg('game-msg', result.msg, true);
+  }
+  await pollState();
+}
+
+// ---------- Preroll Quiz (must answer correctly before the roll executes) ----------
+// Reuses the same #quiz-overlay markup as the snake/ladder quiz below, just
+// driven through GameAPI.submitRollQuiz (POST /api/game/move) instead of
+// QuestionAPI.validate + GameAPI.finalizeMove. There's no per-question timer
+// specified for this one (unlike the snake/ladder quiz), so the countdown
+// element is hidden for the duration and a wrong answer just re-enables the
+// same question for another attempt.
+let currentRollQuiz = null;
+
+function runPrerollQuiz(questionData) {
+  return new Promise((resolve) => {
+    currentRollQuiz = { questionId: questionData.questionId, resolve };
+    $('quiz-question').innerText = questionData.questionText;
+    $('quiz-result').innerText = '';
+    $('quiz-timer').style.display = 'none';
+    const optsEl = $('quiz-options');
+    optsEl.innerHTML = '';
+    ['A', 'B', 'C', 'D'].forEach((letter, i) => {
+      if (questionData.options[i] === undefined) return;
+      const b = document.createElement('button');
+      b.className = 'quiz-opt';
+      b.innerText = `${letter}. ${questionData.options[i]}`;
+      b.onclick = () => submitPrerollAnswer(letter);
+      optsEl.appendChild(b);
+    });
+    $('quiz-overlay').classList.add('active');
+  });
+}
+
+async function submitPrerollAnswer(letter) {
+  if (!currentRollQuiz) return;
+  document.querySelectorAll('#quiz-options .quiz-opt').forEach(b => b.disabled = true);
+  const result = await GameAPI.submitRollQuiz(currentRollQuiz.questionId, letter);
+
+  if (handleApiError(result)) {
+    closePrerollQuiz(null);
+    return;
+  }
+  if (result.data.correct === false) {
+    // Same question stays up — resubmit with a different option.
+    $('quiz-result').innerText = '❌ Incorrect. Try again.';
+    document.querySelectorAll('#quiz-options .quiz-opt').forEach(b => b.disabled = false);
+    return;
+  }
+  // Correct — the server executed the roll and returned the normal
+  // roll-result payload (diceValue, currentTile, needsQuiz, itemGranted...).
+  $('quiz-result').innerText = '✅ Correct! Rolling…';
+  closePrerollQuiz(result);
+}
+
+function closePrerollQuiz(rollResult) {
+  $('quiz-overlay').classList.remove('active');
+  $('quiz-timer').style.display = '';
+  const resolve = currentRollQuiz?.resolve;
+  currentRollQuiz = null;
+  if (resolve) resolve(rollResult);
+}
+
+// ---------- Snake/Ladder Quiz (unchanged) ----------
 async function openQuiz() {
   const q = await QuestionAPI.getRandom(sessionId);
   if (q.code !== 0) return showMsg('game-msg', q.msg, false);

@@ -1,7 +1,8 @@
 // js/botManager.js
 // Spawns 25 virtual players ("bots") that join the admin's current session and
-// play the game autonomously — dice rolls, snake/ladder quizzes, and bonus
-// rounds — so a full 25-player game can be demoed from a single admin tab.
+// play the game autonomously — preroll quizzes, dice rolls, snake/ladder
+// quizzes, and bonus rounds — so a full 25-player game can be demoed from a
+// single admin tab.
 //
 // Bots only ever call the same public HTTP routes and listen to the same
 // Socket.io events real players use (see apiService.js's BotAPI + playerApp.js
@@ -52,11 +53,42 @@ function reportStatus() {
   statusListener({ total, finished, expected: BOT_COUNT });
 }
 
+const PREROLL_MAX_ATTEMPTS = 10; // random-guess retry ceiling, so a stuck bot can't loop forever
+
+// Answers the preroll quiz gate for a bot by random-guessing until correct
+// (or PREROLL_MAX_ATTEMPTS is hit). Same /api/game/move endpoint as the
+// initial roll — see BotAPI.submitRollQuiz in apiService.js — just
+// resubmitted with questionId+selectedOption. A wrong answer keeps the same
+// question up for another try, per the API's { correct: false } contract.
+// Returns the eventual response (either the normal roll-result payload once
+// answered correctly, or an error/failure code to let the caller handle it),
+// or null if the bot died or the retry ceiling was hit.
+async function answerPrerollQuizAsBot(bot, sessionId, questionData) {
+  const questionId = questionData.questionId;
+  for (let attempt = 0; attempt < PREROLL_MAX_ATTEMPTS; attempt++) {
+    if (!bot.alive) return null;
+    const letter = randomOption(questionData.options);
+    const r = await BotAPI.submitRollQuiz(sessionId, bot.playerId, questionId, letter);
+    if (r.code !== 0 || r.data?.correct !== false) return r; // error, or a genuine correct-answer roll result
+  }
+  console.warn(`[bot ${bot.username}] preroll quiz: gave up after ${PREROLL_MAX_ATTEMPTS} attempts`);
+  return null;
+}
+
 // ---------- Per-bot gameplay loop ----------
 async function rollForBot(bot, sessionId) {
   if (!bot.alive || bot.finished) return;
 
-  const r = await BotAPI.rollDice(sessionId, bot.playerId);
+  let r = await BotAPI.rollDice(sessionId, bot.playerId);
+
+  // Preroll quiz gate: the server won't execute the roll until this bot
+  // answers correctly. Resolve it first, then fall through to the same
+  // code/needsQuiz handling below using whatever response comes out of it.
+  if (r.code === 0 && r.data?.needQuiz) {
+    const resolved = await answerPrerollQuizAsBot(bot, sessionId, r.data);
+    if (!resolved) return; // bot died mid-retry, or gave up — next move_update will nudge it again
+    r = resolved;
+  }
 
   if (r.code === 2020) { // same "already finished" code playerApp.js checks for
     bot.finished = true;
