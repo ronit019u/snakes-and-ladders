@@ -414,7 +414,24 @@ async function submitQuizAnswer(letter) {
   $('quiz-result').innerText = result.data.correct
     ? `✅ Correct! Moving to tile ${result.data.targetTile}`
     : `❌ Incorrect. Moving to tile ${result.data.targetTile}`;
-  await GameAPI.finalizeMove(result.data.targetTile);
+  const moveResult = await GameAPI.finalizeMove(result.data.targetTile);
+  // Flash tiles now grant items through this same snake/ladder quiz flow
+  // (correct answer only) instead of instantly on roll, so the finalizeMove
+  // response can carry itemGranted/inventory too. Sync from the
+  // authoritative post-move inventory array rather than blindly pushing, so
+  // a grant blocked server-side (inventory already full) can't "reappear"
+  // client-side later.
+  if (moveResult.code === 0 && moveResult.data?.itemGranted) {
+    const prevCount = localInventory.length;
+    if (Array.isArray(moveResult.data.inventory)) {
+      localInventory = [...moveResult.data.inventory];
+    }
+    const wasAdded = localInventory.length > prevCount;
+    renderInventory();
+    showMsg('game-msg', wasAdded
+      ? `🎁 You received: ${moveResult.data.itemGranted}`
+      : `🎒 Inventory full — ${moveResult.data.itemGranted} was lost!`, wasAdded);
+  }
   setTimeout(() => {
     $('quiz-overlay').classList.remove('active');
     pollState();
