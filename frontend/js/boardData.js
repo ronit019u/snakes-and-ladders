@@ -1,7 +1,7 @@
 // js/boardData.js
 // Board layout, SVG snakes/ladders, token animation with path following.
 
-export const LADDERS = [[2, 23], [6, 45], [20, 59], [52, 71], [57, 96], [71, 92], [88, 99], [95, 98]];
+export const LADDERS = [[2, 23], [6, 45], [9, 13], [20, 59], [52, 71], [57, 96], [71, 92], [88, 99]];
 export const SNAKES = [[16, 6], [47, 26], [49, 11], [56, 53], [62, 19], [64, 60], [87, 24], [93, 73]];
 export const FLASHING_TILES = [5, 12, 28, 35, 42, 58, 65, 72, 88, 95];
 

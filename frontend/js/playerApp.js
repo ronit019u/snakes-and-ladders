@@ -339,10 +339,10 @@ async function submitQuizAnswer(letter) {
   const moveResult = await GameAPI.finalizeMove(result.data.targetTile);
   // Flash tiles now grant items through this same snake/ladder quiz flow
   // (correct answer only) instead of instantly on roll, so the finalizeMove
-  // response can carry itemGranted/inventory too — same shape as the
-  // dice-roll path in handleRoll(). Sync from the authoritative post-move
-  // inventory array rather than blindly pushing, since a full inventory
-  // blocks the grant server-side.
+  // response can carry itemGranted/inventory too. Sync from the
+  // authoritative post-move inventory array rather than blindly pushing, so
+  // a grant blocked server-side (inventory already full) can't "reappear"
+  // client-side later.
   if (moveResult.code === 0 && moveResult.data?.itemGranted) {
     const prevCount = localInventory.length;
     if (Array.isArray(moveResult.data.inventory)) {
