@@ -333,9 +333,19 @@ async function submitQuizAnswer(letter) {
     setTimeout(() => $('quiz-overlay').classList.remove('active'), 1500);
     return;
   }
-  $('quiz-result').innerText = result.data.correct
-    ? `✅ Correct! Moving to tile ${result.data.targetTile}`
-    : `❌ Incorrect. Moving to tile ${result.data.targetTile}`;
+  // targetTile === -1 is a deliberate protocol value from the backend
+  // (quizController.validateAnswer), not an error: it means this quiz was
+  // for a flash tile, not a snake/ladder move. It still MUST be sent on to
+  // finalizeMove() below — gameController.move() specifically branches on
+  // targetTile === -1 to look up req.session.flashCorrect and roll/grant the
+  // item. Skipping that call (as an earlier version of this fix mistakenly
+  // did) means the item is never granted at all. The only thing that needs
+  // special handling here is the display text, since "-1" isn't a real tile.
+  const isFlashTileQuiz = result.data.targetTile === -1;
+  $('quiz-result').innerText = isFlashTileQuiz
+    ? (result.data.correct ? '✅ Correct! Checking for a reward…' : '❌ Incorrect — no reward this time.')
+    : (result.data.correct ? `✅ Correct! Moving to tile ${result.data.targetTile}` : `❌ Incorrect. Moving to tile ${result.data.targetTile}`);
+
   const moveResult = await GameAPI.finalizeMove(result.data.targetTile);
   // Flash tiles now grant items through this same snake/ladder quiz flow
   // (correct answer only) instead of instantly on roll, so the finalizeMove
@@ -353,6 +363,14 @@ async function submitQuizAnswer(letter) {
     showMsg('game-msg', wasAdded
       ? `🎁 You received: ${moveResult.data.itemGranted}`
       : `🎒 Inventory full — ${moveResult.data.itemGranted} was lost!`, wasAdded);
+  } else if (moveResult.code === 0 && isFlashTileQuiz) {
+    // A correct flash-tile answer doesn't guarantee an item — the backend
+    // rolls blueProb/redProb/itemProb independently at grant time (see
+    // gameLogic.getFlashingTileEffect), so "correct but no item" is an
+    // expected outcome, not a failure. Show the backend's own explanation
+    // (e.g. "Correct! No item this time.") instead of leaving the player
+    // guessing why nothing showed up.
+    showMsg('game-msg', moveResult.msg, moveResult.data?.correct !== false);
   }
   setTimeout(() => {
     $('quiz-overlay').classList.remove('active');
