@@ -172,7 +172,16 @@ async function pollState() {
 
   if (startedAt) sessionStartedAt = startedAt;
   leaderboardCount = leaderboardDisplayCount || presets?.leaderboardDisplayCount || 5;
-  bonusTimeoutSecs = presets?.bonusTimeout || 15;
+  // NOTE: intentionally NOT reading presets?.bonusTimeout here. The server
+  // (services/socketService.js's BONUS_ANSWER_WINDOW_MS) always waits a
+  // hardcoded 15s before broadcasting 'bonus_round_expired', regardless of
+  // what an admin sets for Bonus Timeout in a preset. If this countdown used
+  // the preset value instead, a non-15s preset would make the on-screen
+  // timer hit 0 well before (or after) the server actually ends the round,
+  // which looks like the overlay "hanging" after a wrong answer. Keeping
+  // this hardcoded keeps the two clocks in sync until the server honors the
+  // preset too.
+  bonusTimeoutSecs = 15;
 
   const me = activePlayers?.find(p => p.playerId === playerId);
   if (me && me.completedAt && !iAmFinished) {
