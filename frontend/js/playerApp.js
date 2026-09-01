@@ -495,11 +495,14 @@ function openBonusRound(data) {
   }, 1000);
 }
 
-// Answering wrong (or correct-but-too-late) never ends the round for this
-// player — the overlay stays open and locked. The round only actually ends
-// when the 'bonus_result' (someone answered correctly) or
-// 'bonus_round_expired' (timer ran out) socket event arrives — see
-// closeBonusOverlay(), handleBonusResult(), handleBonusExpired() below.
+// A wrong answer already has its consequence applied server-side —
+// bonusController.submitBonusAnswer moves this player back the penalty
+// steps immediately, regardless of whether the round is still open for
+// everyone else. So unlike a *correct* answer (which has to wait to find
+// out if it actually won, since only the first correct answer counts),
+// there's nothing left to wait for once a wrong answer comes back — close
+// the overlay right away instead of leaving the player blocked until the
+// round ends for other players.
 async function submitBonusAnswer(letter) {
   if (!currentBonus) return;
   document.querySelectorAll('#bonus-options .quiz-opt').forEach(b => b.disabled = true);
@@ -512,7 +515,9 @@ async function submitBonusAnswer(letter) {
   } else if (result.data?.correct) {
     $('bonus-result').innerText = '✅ Correct! Waiting for confirmation…';
   } else {
-    $('bonus-result').innerText = `❌ Wrong — knocked back ${result.data?.penalty ?? ''} steps. Waiting for the round to end…`;
+    $('bonus-result').innerText = `❌ Wrong — knocked back ${result.data?.penalty ?? ''} steps.`;
+    setTimeout(closeBonusOverlay, 1200);
+    pollState();
   }
 }
 
