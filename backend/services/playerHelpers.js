@@ -86,9 +86,9 @@ function checkTileBonusTrigger(session, player, sessionId, socketService, bonusC
     if (session.gameStatus !== 'InProgress') return false;
 
     const currentTile = player.currentTile;
-    if (currentTile < 10 || currentTile >= 100) return false;
+    if (currentTile < 11 || currentTile >= 100) return false;
 
-    const tileGroup = Math.floor(currentTile / 10) * 10;
+    const tileGroup = Math.floor((currentTile - 1) / 10) * 10;
     if (!session.triggeredBonusTiles) session.triggeredBonusTiles = [];
     if (session.triggeredBonusTiles.includes(tileGroup)) return false;
 
