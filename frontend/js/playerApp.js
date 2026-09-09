@@ -168,19 +168,7 @@ function handleEarthquake(data) {
   showMsg('game-msg', `🌍 Earthquake! Everyone active got knocked back ${data?.magnitude ?? ''} tiles.`, false);
 }
 
-// ---------- Create / Join ----------
-async function handleCreate() {
-  myUsername = $('username-input').value.trim();
-  if (!myUsername) return showMsg('join-msg', 'Enter a username', false);
-  const r = await GameAPI.create(myUsername);
-  if (r.code !== 0) return showMsg('join-msg', r.msg, false);
-  sessionId = r.data.sessionId;
-  playerId = r.data.playerId;
-  iAmOwner = true;
-  $('start-game-btn').classList.remove('hidden');
-  enterWaitingRoom();
-}
-
+// ---------- Join ----------
 async function handleJoin() {
   myUsername = $('username-input').value.trim();
   const code = $('session-input').value.trim();
@@ -579,7 +567,6 @@ function init() {
   updateMuteBtn();
 
   $('reconnect-api-btn').onclick = () => { setApiBase($('api-base').value); setupSocket(); };
-  $('create-btn').onclick = withLoadingState($('create-btn'), 'Creating…', handleCreate);
   $('join-btn').onclick = withLoadingState($('join-btn'), 'Joining…', handleJoin);
   $('start-game-btn').onclick = withLoadingState($('start-game-btn'), 'Starting…', handleStart);
   $('roll-btn').onclick = async () => {
