@@ -1,6 +1,8 @@
 // js/boardData.js
 // Board layout, SVG snakes/ladders, token animation with path following.
 
+import { playSfx } from './audioService.js';
+
 export const LADDERS = [[2, 23], [6, 45], [9, 13], [20, 59], [52, 71], [57, 96], [71, 92], [88, 99]];
 export const SNAKES = [[16, 6], [47, 26], [49, 11], [56, 53], [62, 19], [64, 60], [87, 24], [93, 73]];
 export const FLASHING_TILES = [5, 12, 28, 35, 42, 58, 65, 72, 88, 95];
@@ -84,6 +86,7 @@ export function buildBoard(containerEl, flashColors = null) {
   }
 
   drawConnections(containerEl);
+  ensureFxLayer(containerEl);
   return tileEls;
 }
 
@@ -361,6 +364,8 @@ export function renderTokens(players, oldPlayers = null) {
       if (old && old.currentTile !== p.currentTile) {
         const pathType = getPathType(old.currentTile, p.currentTile);
         if (pathType) {
+          if (pathType === 'snake') playSnakeEffect(old.currentTile);
+          else if (pathType === 'ladder') playLadderEffect(old.currentTile);
           animateTokenAlongPath(p.playerId, old.currentTile, p.currentTile, pathType);
         } else {
           animateTokenSimple(p.playerId, old.currentTile, p.currentTile);
@@ -426,7 +431,139 @@ function animateTokenAlongPath(playerId, fromTile, toTile, pathType) {
     } else {
       token.style.transition = 'transform 0.3s ease';
       token.style.transform = 'translate(0, 0)';
+      if (pathType === 'snake') playSnakeEffect(toTile);
+      else if (pathType === 'ladder') playLadderEffect(toTile);
     }
   }
   requestAnimationFrame(step);
+}
+
+// ===================================================================
+// ----- FX layer: bombs, rockets, arrows, snake bites, ladder climbs,
+// earthquakes. Everything here is purely visual - a floating emoji
+// (or flying projectile) plus a brief tile glow/shake - and cleans
+// itself up after its animation finishes.
+// ===================================================================
+
+let fxLayerEl = null;
+
+function ensureFxLayer(containerEl) {
+  let fx = containerEl.querySelector('.fx-layer');
+  if (!fx) {
+    fx = document.createElement('div');
+    fx.className = 'fx-layer';
+    containerEl.appendChild(fx);
+  }
+  fxLayerEl = fx;
+  return fx;
+}
+
+// Center of a tile, expressed relative to #board's own box (same frame
+// animateTokenAlongPath uses), so fx elements line up with tiles/tokens.
+function getTileCenter(tileNum) {
+  const board = document.getElementById('board');
+  const tileEl = document.getElementById(`tile-${tileNum}`);
+  if (!board || !tileEl) return null;
+  const boardRect = board.getBoundingClientRect();
+  const r = tileEl.getBoundingClientRect();
+  return {
+    x: r.left + r.width / 2 - boardRect.left,
+    y: r.top + r.height / 2 - boardRect.top
+  };
+}
+
+function flashTile(tileNum, cls, duration) {
+  const tileEl = document.getElementById(`tile-${tileNum}`);
+  if (!tileEl) return;
+  tileEl.classList.remove(cls);
+  // Force reflow so the animation restarts if it's triggered twice fast.
+  void tileEl.offsetWidth;
+  tileEl.classList.add(cls);
+  setTimeout(() => tileEl.classList.remove(cls), duration);
+}
+
+function spawnPop(tileNum, cls, emoji, duration) {
+  if (!fxLayerEl) return;
+  const pos = getTileCenter(tileNum);
+  if (!pos) return;
+  const el = document.createElement('div');
+  el.className = `fx-pop ${cls}`;
+  el.textContent = emoji;
+  el.style.left = `${pos.x}px`;
+  el.style.top = `${pos.y}px`;
+  fxLayerEl.appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+function spawnProjectile(fromTile, toTile, cls, emoji, duration) {
+  if (!fxLayerEl) return null;
+  const from = getTileCenter(fromTile);
+  const to = getTileCenter(toTile) || from;
+  if (!from) return null;
+  const el = document.createElement('div');
+  el.className = `fx-projectile ${cls}`;
+  el.textContent = emoji;
+  el.style.left = `${from.x}px`;
+  el.style.top = `${from.y}px`;
+  el.style.setProperty('--dx', `${to.x - from.x}px`);
+  el.style.setProperty('--dy', `${to.y - from.y}px`);
+  const angle = Math.atan2(to.y - from.y, to.x - from.x) * (180 / Math.PI) + 90;
+  el.style.setProperty('--rot', `${angle}deg`);
+  el.style.animationDuration = `${duration}ms`;
+  fxLayerEl.appendChild(el);
+  setTimeout(() => el.remove(), duration);
+  return { from, to };
+}
+
+/** 💣 Bomb: explosion burst + red shake right on the hit tile. */
+export function playBombEffect(tileNum) {
+  playSfx('bomb');
+  spawnPop(tileNum, 'fx-explosion', '💥', 700);
+  flashTile(tileNum, 'tile-hit-bomb', 650);
+}
+
+/** 🏹 Arrow: flies from the shooter's tile to the target, then a small hit pop. */
+export function playArrowEffect(fromTile, toTile) {
+  playSfx('arrow');
+  spawnProjectile(fromTile, toTile, 'fx-arrow', '🏹', 450);
+  setTimeout(() => {
+    spawnPop(toTile, 'fx-hit', '💢', 500);
+    flashTile(toTile, 'tile-hit-bomb', 500);
+  }, 430);
+}
+
+/** 🚀 Rocket: launches from the old tile, flies to the new one, glows on arrival. */
+export function playRocketEffect(fromTile, toTile) {
+  playSfx('rocket');
+  spawnPop(fromTile, 'fx-launch-smoke', '💨', 500);
+  spawnProjectile(fromTile, toTile, 'fx-rocket', '🚀', 800);
+  setTimeout(() => {
+    spawnPop(toTile, 'fx-sparkle', '✨', 600);
+    flashTile(toTile, 'tile-hit-rocket', 800);
+  }, 760);
+}
+
+/** 🐍 Snake bite, at the head tile the player got swallowed on. */
+function playSnakeEffect(tileNum) {
+  playSfx('snake');
+  spawnPop(tileNum, 'fx-snake', '🐍', 600);
+  flashTile(tileNum, 'tile-hit-snake', 550);
+}
+
+/** 🪜 Ladder climb sparkle, at the tile the player lands on. */
+function playLadderEffect(tileNum) {
+  playSfx('ladder');
+  spawnPop(tileNum, 'fx-sparkle', '✨', 600);
+  flashTile(tileNum, 'tile-hit-ladder', 600);
+}
+
+/** 🌍 Earthquake: shakes the whole board once. */
+export function playEarthquakeEffect() {
+  playSfx('earthquake');
+  const board = document.getElementById('board');
+  if (!board) return;
+  board.classList.remove('board-earthquake');
+  void board.offsetWidth;
+  board.classList.add('board-earthquake');
+  setTimeout(() => board.classList.remove('board-earthquake'), 600);
 }

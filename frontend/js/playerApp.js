@@ -4,7 +4,11 @@
 import { state, setApiBase } from './config.js';
 import { GameAPI, QuestionAPI, BonusAPI } from './apiService.js';
 import { connectSocket, onSocketConnect, onSocketDisconnect, onSocketEvent, joinRoom } from './socketService.js';
-import { buildBoard, renderTokens, getFlashingTileColors } from './boardData.js';
+import {
+  buildBoard, renderTokens, getFlashingTileColors,
+  playBombEffect, playArrowEffect, playRocketEffect, playEarthquakeEffect
+} from './boardData.js';
+import { initAudio, startBgm, playSfx, toggleMute, isMuted } from './audioService.js';
 
 const ITEM_ICONS = { rocket: '🚀', bomb: '💣', arrow: '🏹' };
 const TARGETED_ITEMS = ['bomb', 'arrow'];
@@ -93,6 +97,7 @@ function playDiceAnimation(finalValue) {
   return new Promise((resolve) => {
     const dice = $('dice');
     if (!dice) { resolve(); return; }
+    playSfx('diceRoll');
     const rot = DICE_ROTATIONS[finalValue] || DICE_ROTATIONS[1];
     const turns = 3 + Math.floor(Math.random() * 3);
     const rx = turns * 360 + rot.x;
@@ -120,8 +125,47 @@ function setupSocket() {
     else if (event === 'bonus_round_expired') handleBonusExpired(data);
     else if (event === 'bonus_result') handleBonusResult(data);
     else if (event === 'game_over') handleGameOver(data);
+    else if (event === 'item_used') handleItemUsed(data);
+    else if (event === 'earthquake_event') handleEarthquake(data);
     if (sessionId) pollState();
   });
+}
+
+// ---------- Item / earthquake FX ----------
+// These read `prevPlayers` (last polled snapshot, still un-mutated at this
+// point in the tick) to know where the source/target stood *before* this
+// event, and `data.activePlayers` (fresh from the broadcast) for where they
+// ended up — so the projectile/explosion animates in the right place even
+// on the client of a player who didn't fire the item themselves.
+function handleItemUsed(data) {
+  if (!boardTileEls) return; // not on the game screen yet
+  const { itemType, sourcePlayerId, targetPlayerId, activePlayers } = data || {};
+  const findNew = (pid) => activePlayers?.find(p => p.playerId === pid);
+  const findOld = (pid) => prevPlayers?.find(p => p.playerId === pid);
+
+  if (itemType === 'rocket') {
+    const newSrc = findNew(sourcePlayerId);
+    if (!newSrc) return;
+    const oldSrc = findOld(sourcePlayerId);
+    const fromTile = oldSrc ? oldSrc.currentTile : newSrc.currentTile;
+    playRocketEffect(fromTile, newSrc.currentTile);
+  } else if (itemType === 'bomb') {
+    const oldTgt = findOld(targetPlayerId) || findNew(targetPlayerId);
+    if (!oldTgt) return;
+    playBombEffect(oldTgt.currentTile);
+  } else if (itemType === 'arrow') {
+    const newSrc = findNew(sourcePlayerId);
+    const oldTgt = findOld(targetPlayerId) || findNew(targetPlayerId);
+    if (!oldTgt) return;
+    const fromTile = newSrc ? newSrc.currentTile : oldTgt.currentTile;
+    playArrowEffect(fromTile, oldTgt.currentTile);
+  }
+}
+
+function handleEarthquake(data) {
+  if (!boardTileEls) return;
+  playEarthquakeEffect();
+  showMsg('game-msg', `🌍 Earthquake! Everyone active got knocked back ${data?.magnitude ?? ''} tiles.`, false);
 }
 
 // ---------- Create / Join ----------
@@ -196,6 +240,7 @@ async function pollState() {
 
 function handleGameOver(data) {
   clearInterval(pollTimer);
+  playSfx('win');
   const players = data.activePlayers || [];
   const finishers = players
     .filter(p => p.completedAt)
@@ -220,6 +265,8 @@ function renderWaitingPlayers(players) {
 function enterGameScreen(presets) {
   $('waiting-screen').classList.add('hidden');
   $('game-screen').classList.remove('hidden');
+  initAudio();
+  startBgm();
   const flashColors = presets ? getFlashingTileColors(
     presets.flashingTile?.blueProb ?? 30,
     presets.flashingTile?.redProb ?? 30
@@ -336,6 +383,7 @@ async function submitQuizAnswer(letter) {
   $('quiz-result').innerText = result.data.correct
     ? `✅ Correct! Moving to tile ${result.data.targetTile}`
     : `❌ Incorrect. Moving to tile ${result.data.targetTile}`;
+  playSfx(result.data.correct ? 'correct' : 'wrong');
   await GameAPI.finalizeMove(result.data.targetTile);
   setTimeout(() => {
     $('quiz-overlay').classList.remove('active');
@@ -392,8 +440,10 @@ async function submitBonusAnswer(letter) {
     $('bonus-result').innerText = '⏱️ Correct, but someone else answered first — waiting for the round to end…';
   } else if (result.data?.correct) {
     $('bonus-result').innerText = '✅ Correct! Waiting for confirmation…';
+    playSfx('correct');
   } else {
     $('bonus-result').innerText = `❌ Wrong — knocked back ${result.data?.penalty ?? ''} steps.`;
+    playSfx('wrong');
     setTimeout(closeBonusOverlay, 1200);
     pollState();
   }
@@ -508,7 +558,26 @@ async function useItem(itemType, slotIndex) {
 }
 
 // ---------- Init ----------
+// Browsers require a user gesture before audio can play at all - unlock
+// the AudioContext on the page's first click, but don't start the music
+// yet. The background music itself only starts once the player actually
+// enters the game screen (see enterGameScreen below), not while they're
+// still on the join/waiting screens.
+function unlockAudioOnce() {
+  initAudio();
+}
+
+function updateMuteBtn() {
+  const btn = $('mute-btn');
+  if (btn) btn.innerText = isMuted() ? '🔇' : '🔊';
+}
+
 function init() {
+  document.addEventListener('click', unlockAudioOnce, { once: true });
+  const muteBtn = $('mute-btn');
+  if (muteBtn) muteBtn.onclick = () => { toggleMute(); updateMuteBtn(); };
+  updateMuteBtn();
+
   $('reconnect-api-btn').onclick = () => { setApiBase($('api-base').value); setupSocket(); };
   $('create-btn').onclick = withLoadingState($('create-btn'), 'Creating…', handleCreate);
   $('join-btn').onclick = withLoadingState($('join-btn'), 'Joining…', handleJoin);
