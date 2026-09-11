@@ -1,3 +1,14 @@
+Changelog – 2026-09-11
+Refactored service layer to enforce Single-Writer Principle: extracted DB writes out of socketService into gameService (disconnect, earthquake) and bonusService (bonus rounds); socketService now only detects events, triggers business-layer commands, and broadcasts results.
+Added services/gameService.js for disconnect and earthquake state changes and DB writes.
+Added services/bonusService.js for bonus round logic and DB writes.
+socketService no longer requires dbService; removed all direct readDB / writeDB calls.
+socketService no longer requires bonusController, breaking the circular dependency between the two.
+bonusController refactored into a thin HTTP adapter: delegates all business logic to bonusService, broadcasts returned events, and stops session timers on game_over.
+Removed checkTileBonusTrigger from playerHelpers.js and all call sites — progression-based bonus trigger rejected by client; playerHelpers is now a pure utility module.
+Removed unused broadcastBonusResult from socketService.
+
+
 Changelog – 2026-08-28
 Removed dice debug log from server console
 
