@@ -69,50 +69,8 @@ function applyPlayerFinish(session, player) {
     }
 }
 
-// services/playerHelpers.js
-
-/**
- * 检查玩家最终落点是否触发 10 倍数格子的奖励回合
- * 每个 10 倍数格子（10,20,...,90）全场只能触发一次
- * @param {Object} session - 会话对象
- * @param {Object} player - 移动后的玩家
- * @param {string} sessionId - 会话 ID
- * @param {Object} socketService - Socket 服务
- * @param {Object} bonusController - 奖励回合控制器
- * @returns {boolean} 是否触发了奖励回合
- */
-function checkTileBonusTrigger(session, player, sessionId, socketService, bonusController, db) {
-    if (player.completedAt) return false;
-    if (session.gameStatus !== 'InProgress') return false;
-
-    const currentTile = player.currentTile;
-    if (currentTile < 11 || currentTile >= 100) return false;
-
-    const tileGroup = Math.floor((currentTile - 1) / 10) * 10;
-    if (!session.triggeredBonusTiles) session.triggeredBonusTiles = [];
-    if (session.triggeredBonusTiles.includes(tileGroup)) return false;
-
-    // 获取活跃玩家（排除已完成和掉线）
-    const activePlayers = session.players.filter(p => p.turnStatus === 'active' && !p.completedAt);
-    // 50% 阈值，向上取整，至少 1 人
-    const threshold = Math.max(1, Math.ceil(activePlayers.length * 0.5));
-    
-    // 到达该区段的玩家数量
-    const reachedCount = activePlayers.filter(p => p.currentTile >= tileGroup).length;
-    if (reachedCount < threshold) return false;
-
-    const result = bonusController.startBonusRoundLogicOnly(sessionId, db);
-    if (result.code === 0) {
-        session.triggeredBonusTiles.push(tileGroup);
-        socketService.broadcastGameEvent(sessionId, 'bonus_round_started', result.data);
-        socketService.scheduleBonusExpiry(sessionId, result.data.bonusRoundId);
-        return true;
-    }
-    return false;
-}
 
 module.exports = {
     buildPublicPlayerList,
-    applyPlayerFinish,
-    checkTileBonusTrigger
+    applyPlayerFinish
 };

@@ -30,9 +30,8 @@
 //   - Exposing broadcastGameEvent()/broadcastBonusResult() for controllers
 //     to call after a write
 
-const { readDB, writeDB } = require('./dbService');
-const gameLogic = require('./gameLogic');
-const { buildPublicPlayerList } = require('./playerHelpers');
+const gameService = require('./gameService');
+const bonusService = require('./bonusService');
 
 let ioInstance = null;
 
@@ -114,22 +113,12 @@ function scheduleDisconnect(sessionId, playerId) {
 }
 
 function markPlayerInactive(sessionId, playerId) {
-    const db = readDB();
-    const session = db.sessions[sessionId];
-    if (!session) return;
-
-    const player = session.players.find(p => p.playerId === playerId);
-    if (!player || player.turnStatus === 'inactive') return;
-
-    player.turnStatus = 'inactive';
-    writeDB(db);
-
-    console.log(`[SocketService] ${playerId} marked inactive in ${sessionId} (grace period expired)`);
-
-    broadcastGameEvent(sessionId, 'player_disconnected', {
-        playerId,
-        activePlayers: buildPublicPlayerList(session)
-    });
+    const result = gameService.markPlayerInactive(sessionId, playerId);
+    if (!result || result.code !== 0) {
+        console.warn('[SocketService] mark inactive skipped:', result?.msg);
+        return;
+    }
+    result.events.forEach(e => broadcastGameEvent(sessionId, e.event, e.data));
 }
 
 // -----------------------------------------------------------------------
@@ -138,29 +127,20 @@ function markPlayerInactive(sessionId, playerId) {
 
 // Called by gameController.start() once a game actually begins.
 function startSessionTimers(sessionId) {
-    stopSessionTimers(sessionId); // guard against double-start
+    stopSessionTimers(sessionId);
 
-    const db = readDB();
-    const session = db.sessions[sessionId];
-    if (!session) return;
+    const config = gameService.getSessionTimerConfig(sessionId);
+    if (!config) return;
 
-    // NOTE: DEFAULT_PRESET.earthquake uses the field name "interval", but
-    // getPreset()'s normalized output reads "frequency" - checking both
-    // here defensively. Worth fixing at the source in gameLogic.js so this
-    // fallback isn't needed long-term.
-    const rawPreset = session.presets || {};
-    const normalizedPreset = gameLogic.getPreset(session.presets);
+    const earthquakeTimer = setInterval(
+        () => triggerEarthquake(sessionId),
+        config.earthquakeSeconds * 1000
+    );
 
-    const earthquakeSeconds =
-        rawPreset.earthquake?.interval ??
-        rawPreset.earthquake?.frequency ??
-        normalizedPreset.earthquake.frequency ??
-        60;
-
-    const bonusSeconds = normalizedPreset.bonus.interval || 180;
-
-    const earthquakeTimer = setInterval(() => triggerEarthquake(sessionId), earthquakeSeconds * 1000);
-    const bonusTimer = setInterval(() => triggerTimedBonusRound(sessionId), bonusSeconds * 1000);
+    const bonusTimer = setInterval(
+        () => triggerTimedBonusRound(sessionId),
+        config.bonusSeconds * 1000
+    );
 
     sessionTimers[sessionId] = { earthquake: earthquakeTimer, bonus: bonusTimer };
 }
@@ -177,52 +157,32 @@ function stopSessionTimers(sessionId) {
 }
 
 function triggerEarthquake(sessionId) {
-    const db = readDB();
-    const session = db.sessions[sessionId];
-    if (!session || session.gameStatus !== 'InProgress') {
-        stopSessionTimers(sessionId);
-        return;
-    }
-
-    const preset = gameLogic.getPreset(session.presets);
-    const magnitude = preset.earthquake.magnitude || 3;
-
-    session.players.forEach(p => {
-        // EXCLUDE FINISHED PLAYERS FROM EARTHQUAKE EFFECTS
-        if (p.turnStatus === 'active' && !p.completedAt) {
-            p.currentTile = Math.max(1, p.currentTile - magnitude);
+    try {
+        const result = gameService.triggerEarthquake(sessionId);
+        if (!result || result.code !== 0) {
+            if (result && result.code === 2008) stopSessionTimers(sessionId);
+            return;
         }
-    });
-    writeDB(db);
-
-    broadcastGameEvent(sessionId, 'earthquake_event', {
-        magnitude,
-        activePlayers: buildPublicPlayerList(session)
-    });
+        result.events.forEach(e => broadcastGameEvent(sessionId, e.event, e.data));
+    } catch (err) {
+        console.error('[SocketService] earthquake failed:', err);
+    }
 }
 
 function triggerTimedBonusRound(sessionId) {
-    const db = readDB();
-    const session = db.sessions[sessionId];
-    if (!session || session.gameStatus !== 'InProgress') {
-        stopSessionTimers(sessionId);
-        return;
+    try {
+        const result = bonusService.startBonusRoundLogic(sessionId);
+        if (!result || result.code !== 0) {
+            if (result && (result.code === 2003 || result.code === 2008)) {
+                stopSessionTimers(sessionId);
+            }
+            return;
+        }
+        broadcastGameEvent(sessionId, 'bonus_round_started', result.data);
+        scheduleBonusExpiry(sessionId, result.data.bonusRoundId);
+    } catch (err) {
+        console.error('[SocketService] bonus round failed:', err);
     }
-
-    const bonusController = require('../controllers/bonusController');
-    const result = bonusController.startBonusRoundLogic
-        ? bonusController.startBonusRoundLogic(sessionId)
-        : null;
-
-    if (!result || result.code !== 0) {
-        // No startBonusRoundLogic export yet, a round is already active,
-        // or no questions remain - not worth broadcasting an error for a
-        // silent background tick.
-        return;
-    }
-
-    broadcastGameEvent(sessionId, 'bonus_round_started', result.data);
-    scheduleBonusExpiry(sessionId, result.data.bonusRoundId);
 }
 
 // NOTE: progression-based bonus rounds (trigger after a player crosses 10
@@ -235,13 +195,9 @@ function scheduleBonusExpiry(sessionId, bonusRoundId) {
     bonusExpiryTimers[bonusRoundId] = setTimeout(() => {
         delete bonusExpiryTimers[bonusRoundId];
 
-        const bonusController = require('../controllers/bonusController');
-        const round = bonusController.getActiveBonusRound
-            ? bonusController.getActiveBonusRound(sessionId)
-            : null;
-
+        const round = bonusService.getActiveBonusRound(sessionId);
         if (round && !round.winnerId) {
-            if (bonusController.expireBonusRound) bonusController.expireBonusRound(bonusRoundId);
+            bonusService.expireBonusRound(bonusRoundId);
             broadcastGameEvent(sessionId, 'bonus_round_expired', { bonusRoundId });
         }
     }, BONUS_ANSWER_WINDOW_MS);
@@ -259,16 +215,16 @@ function clearBonusExpiry(bonusRoundId) {
 // -----------------------------------------------------------------------
 
 // Called by bonusController.submitBonusAnswer when a winner is found.
-function broadcastBonusResult(sessionId, data) {
-    if (!ioInstance) {
-        console.warn('[SocketService] io not initialized, skip broadcast');
-        return false;
-    }
-    ioInstance.to(sessionId).emit('bonus_result', data);
+// function broadcastBonusResult(sessionId, data) {
+//     if (!ioInstance) {
+//         console.warn('[SocketService] io not initialized, skip broadcast');
+//         return false;
+//     }
+//     ioInstance.to(sessionId).emit('bonus_result', data);
 
-    if (data.bonusRoundId) clearBonusExpiry(data.bonusRoundId);
-    return true;
-}
+//     if (data.bonusRoundId) clearBonusExpiry(data.bonusRoundId);
+//     return true;
+// }
 
 function broadcastGameEvent(sessionId, event, data) {
     if (!ioInstance) {

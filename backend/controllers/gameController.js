@@ -1,9 +1,8 @@
 // controllers/gameController.js
 const { readDB, writeDB, generateId, generateRoomId } = require('../services/dbService');
 const gameLogic = require('../services/gameLogic');
-const bonusController = require('../controllers/bonusController');
 const socketService = require('../services/socketService');
-const { buildPublicPlayerList, applyPlayerFinish, checkTileBonusTrigger } = require('../services/playerHelpers');
+const { buildPublicPlayerList, applyPlayerFinish } = require('../services/playerHelpers');
 
 // 颜色池（25种，来自 SRS 9.3）
 const COLOR_PALETTE = [
@@ -447,7 +446,6 @@ function move(req, res) {
                 });
             }
 
-            checkTileBonusTrigger(session, player, sessionId, socketService, bonusController, db);
             writeDB(db);
             socketService.broadcastGameEvent(sessionId, 'move_update', {
                 playerId,
@@ -583,7 +581,6 @@ function move(req, res) {
                 });
             }
         }
-        checkTileBonusTrigger(session, player, sessionId, socketService, bonusController, db);
         writeDB(db);
         socketService.broadcastGameEvent(sessionId, 'move_update', {
             playerId,
@@ -773,11 +770,6 @@ function useItem(req, res) {
                 },
                 msg: result.gameStatus === 'Completed' ? '🎉 Rocket reached 100, game over!' : 'Rocket used, reached 100!'
             });
-        }
-
-        // 检查是否触发10倍数奖励（仅火箭主动移动触发，炸弹/箭不触发）
-        if (itemType === 'rocket') {
-            checkTileBonusTrigger(session, player, sessionId, socketService, bonusController, db);
         }
 
         writeDB(db);
