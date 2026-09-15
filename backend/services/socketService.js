@@ -237,7 +237,6 @@ function broadcastGameEvent(sessionId, event, data) {
 
 module.exports = {
     initSocket,
-    broadcastBonusResult,
     broadcastGameEvent,
     startSessionTimers,
     stopSessionTimers,

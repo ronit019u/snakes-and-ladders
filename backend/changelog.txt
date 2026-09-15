@@ -1,3 +1,7 @@
+Changelog – 2026-09-16
+Fixed ReferenceError: removed the stale broadcastBonusResult entry from socketService module.exports, which was left behind after the function was deleted in the Single-Writer refactor.
+
+
 Changelog – 2026-09-11
 Refactored service layer to enforce Single-Writer Principle: extracted DB writes out of socketService into gameService (disconnect, earthquake) and bonusService (bonus rounds); socketService now only detects events, triggers business-layer commands, and broadcasts results.
 Added services/gameService.js for disconnect and earthquake state changes and DB writes.
