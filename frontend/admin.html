@@ -75,17 +75,12 @@
         </div>
 
         <h3 style="margin:14px 0 6px;font-size:13px;color:#94a3b8;">Flashing Tile</h3>
+        <label style="margin-top:8px;">Flashing-tile Reward Pool (weights)</label>
+        <div style="font-size:11px;color:#64748b;margin-bottom:4px;">Landing on a flashing tile always grants one item drawn from this pool (no quiz, no penalty). Items that are disabled under "Items" below are skipped.</div>
         <div class="preset-grid">
-          <div><label>Blue Tile Prob (%)</label><input type="number" id="p-blue" value="30" min="0" max="100"></div>
-          <div><label>Red Tile Prob (%)</label><input type="number" id="p-red" value="30" min="0" max="100"></div>
-          <div><label>Item Prob on Blue (%)</label><input type="number" id="p-item" value="50" min="0" max="100"></div>
-          <div><label>Red Penalty Steps</label><input type="number" id="p-penalty" value="2"></div>
-        </div>
-        <label style="margin-top:8px;">Blue-tile Item Pool (weights)</label>
-        <div class="preset-grid">
-          <div><label>🚀 Rocket</label><input type="number" id="p-pool-rocket" value="5"></div>
-          <div><label>💣 Bomb</label><input type="number" id="p-pool-bomb" value="3"></div>
-          <div><label>🏹 Arrow</label><input type="number" id="p-pool-arrow" value="2"></div>
+          <div><label>🚀 Rocket</label><input type="number" id="p-pool-rocket" value="5" min="0"></div>
+          <div><label>💣 Bomb</label><input type="number" id="p-pool-bomb" value="3" min="0"></div>
+          <div><label>🏹 Arrow</label><input type="number" id="p-pool-arrow" value="2" min="0"></div>
         </div>
 
         <h3 style="margin:14px 0 6px;font-size:13px;color:#94a3b8;">Earthquake</h3>
@@ -138,6 +133,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/adminApp.js"></script>
+  <script type="module" src="js/pages/admin/adminPage.js"></script>
 </body>
 </html>

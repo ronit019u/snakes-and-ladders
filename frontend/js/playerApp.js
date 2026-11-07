@@ -5,7 +5,7 @@ import { state, setApiBase } from './config.js';
 import { GameAPI, QuestionAPI, BonusAPI } from './apiService.js';
 import { connectSocket, onSocketConnect, onSocketDisconnect, onSocketEvent, joinRoom } from './socketService.js';
 import {
-  buildBoard, renderTokens, getFlashingTileColors,
+  buildBoard, renderTokens,
   playBombEffect, playArrowEffect, playRocketEffect, playEarthquakeEffect
 } from './boardData.js';
 import { initAudio, startBgm, playSfx, toggleMute, isMuted } from './audioService.js';
@@ -27,7 +27,19 @@ let leaderboardCount = 5;
 let bonusTimeoutSecs = 15;
 let iAmFinished = false;
 let sessionStartedAt = null;
+let rollInProgress = false;
+let prerollCtx = null; // { timerHandle, resolve } while a pre-roll question is on screen
 
+// The state endpoint doesn't expose the preset's quizTimeout, so this mirrors the
+// 15s the snake/ladder quiz already uses.
+const QUIZ_TIMEOUT_SECS = 15;
+// Sentinel answer sent when the pre-roll timer runs out. It can never match
+// a correct answer, so the server treats it as a wrong answer (consumes the
+// question and issues a new one, or rolls directly if the pool is exhausted).
+const PREROLL_TIMEOUT_ANSWER = 'X';
+const PREROLL_CANCELLED = Symbol('preroll-cancelled');
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const $ = id => document.getElementById(id);
 
 // Renders a completedAt/startedAt gap as "m:ss".
@@ -216,7 +228,7 @@ async function pollState() {
   if (gameStatus === 'waiting') {
     renderWaitingPlayers(activePlayers);
   } else if (gameStatus === 'InProgress') {
-    if ($('game-screen').classList.contains('hidden')) enterGameScreen(presets);
+    if ($('game-screen').classList.contains('hidden')) enterGameScreen();
     const players = activePlayers;
     renderGame(players, prevPlayers);
     prevPlayers = players.map(p => ({ ...p }));
@@ -228,6 +240,7 @@ async function pollState() {
 
 function handleGameOver(data) {
   clearInterval(pollTimer);
+  cancelPrerollQuiz();
   playSfx('win');
   const players = data.activePlayers || [];
   const finishers = players
@@ -250,16 +263,12 @@ function renderWaitingPlayers(players) {
     `<div style="font-size:12px;color:#64748b;margin-top:8px;">${players.length} / 25 joined</div>`;
 }
 
-function enterGameScreen(presets) {
+function enterGameScreen() {
   $('waiting-screen').classList.add('hidden');
   $('game-screen').classList.remove('hidden');
   initAudio();
   startBgm();
-  const flashColors = presets ? getFlashingTileColors(
-    presets.flashingTile?.blueProb ?? 30,
-    presets.flashingTile?.redProb ?? 30
-  ) : null;
-  boardTileEls = buildBoard($('board'), flashColors);
+  boardTileEls = buildBoard($('board'));
   $('my-status').innerText = `You: ${myUsername}`;
   renderInventory();
   prevPlayers = null;
@@ -291,39 +300,150 @@ function renderGame(players, oldPlayers = null) {
   $('leaderboard').innerHTML = html;
 }
 
+// ---------- Pre-roll quiz ----------
+// POST /api/game/move with an empty body returns { prerollQuiz } instead of
+// rolling. The player must answer; a correct answer rolls the dice, a wrong
+// one returns a fresh prerollQuiz. When the question pool is exhausted the
+// server rolls directly (no prerollQuiz), so the loop in handleRoll simply
+// never starts. A present `diceValue` means the dice has been rolled.
+function stopPrerollTimer() {
+  if (prerollCtx?.timerHandle) clearInterval(prerollCtx.timerHandle);
+}
+
+function closePrerollOverlay() {
+  stopPrerollTimer();
+  prerollCtx = null;
+  $('quiz-overlay').classList.remove('active');
+}
+
+// Called when the game ends while a pre-roll question is still open.
+function cancelPrerollQuiz() {
+  if (!prerollCtx) return;
+  const { resolve } = prerollCtx;
+  closePrerollOverlay();
+  resolve(PREROLL_CANCELLED);
+}
+
+// Shows one pre-roll question and resolves with the chosen letter, the
+// timeout sentinel, or PREROLL_CANCELLED.
+function askPrerollQuiz(quiz, notice = '') {
+  return new Promise((resolve) => {
+    stopPrerollTimer();
+    $('quiz-title').innerText = '🎲 Answer correctly to roll the dice';
+    $('quiz-question').innerText = quiz.questionText;
+    $('quiz-result').innerText = notice;
+
+    const optsEl = $('quiz-options');
+    optsEl.innerHTML = '';
+    const ctx = { timerHandle: null, resolve };
+    prerollCtx = ctx;
+
+    const finish = (value) => {
+      if (prerollCtx !== ctx) return; // already answered / cancelled
+      clearInterval(ctx.timerHandle);
+      document.querySelectorAll('#quiz-options .quiz-opt').forEach(b => b.disabled = true);
+      resolve(value);
+    };
+
+    ['A', 'B', 'C', 'D'].forEach((letter, i) => {
+      if (quiz.options?.[i] === undefined) return;
+      const b = document.createElement('button');
+      b.className = 'quiz-opt';
+      b.innerText = `${letter}. ${quiz.options[i]}`;
+      b.onclick = () => finish(letter);
+      optsEl.appendChild(b);
+    });
+
+    $('quiz-overlay').classList.add('active');
+    let timeLeft = QUIZ_TIMEOUT_SECS;
+    $('quiz-timer').innerText = timeLeft;
+    ctx.timerHandle = setInterval(() => {
+      timeLeft--;
+      $('quiz-timer').innerText = timeLeft;
+      if (timeLeft <= 0) finish(PREROLL_TIMEOUT_ANSWER);
+    }, 1000);
+  });
+}
+
 // ---------- Roll Dice ----------
 async function handleRoll() {
   const btn = $('roll-btn');
-  if (btn.disabled) return;
+  if (btn.disabled || rollInProgress) return;
+  rollInProgress = true;
+  btn.disabled = true;
   clearInterval(pollTimer);
   try {
-    const result = await GameAPI.rollDice();
+    let result = await GameAPI.rollDice();
     if (handleApiError(result)) return;
-    const diceValue = result.data.diceValue;
-    await playDiceAnimation(diceValue);
-    if (result.data.itemGranted) {
-      // The backend reports itemGranted (what the tile rolled) even when the
-      // grant was blocked because the inventory was already full at 3 — the
-      // authoritative post-move array is result.data.inventory. Sync from
-      // that instead of blindly pushing, or a blocked item would still show
-      // up locally and "reappear" once a real slot opened up later.
-      const prevCount = localInventory.length;
-      if (Array.isArray(result.data.inventory)) {
-        localInventory = [...result.data.inventory];
+
+    // Keep asking until the server actually rolls (diceValue present). A wrong
+    // answer or a timeout yields a new question; an exhausted pool skips the
+    // loop entirely because the response is already a normal roll.
+    let askedQuiz = false;
+    let notice = '';
+    while (result.data?.prerollQuiz) {
+      askedQuiz = true;
+      const quiz = result.data.prerollQuiz;
+      const answer = await askPrerollQuiz(quiz, notice);
+      if (answer === PREROLL_CANCELLED) return;
+
+      $('quiz-result').innerText = 'Checking…';
+      result = await GameAPI.rollDice(quiz.questionId, answer);
+      if (result.code !== 0) {
+        closePrerollOverlay();
+        handleApiError(result);
+        return;
       }
-      const wasAdded = localInventory.length > prevCount;
-      renderInventory();
-      showMsg('game-msg', wasAdded
-        ? `🎁 You received: ${result.data.itemGranted}`
-        : `🎒 Inventory full — ${result.data.itemGranted} was lost!`, wasAdded);
+      if (result.data?.prerollQuiz) {
+        playSfx('wrong');
+        notice = answer === PREROLL_TIMEOUT_ANSWER
+          ? '⌛ Time\'s up! Here is a new question:'
+          : '❌ Wrong answer — here is a new question:';
+      }
     }
-    if (result.data.needsQuiz) {
+
+    if (askedQuiz) {
+      // The roll response carries no `correct` flag (and after the pool runs
+      // out a wrong answer also rolls), so keep this neutral.
+      $('quiz-result').innerText = '🎲 Rolling…';
+      await sleep(600);
+      closePrerollOverlay();
+    }
+
+    const data = result.data || {};
+    if (data.diceValue !== undefined) await playDiceAnimation(data.diceValue);
+
+    // The roll response always carries the authoritative post-move inventory
+    // (max 3). Sync from it instead of pushing locally, so a grant that was
+    // blocked by a full inventory never shows up as a phantom item.
+    const prevCount = localInventory.length;
+    if (Array.isArray(data.inventory)) {
+      localInventory = [...data.inventory];
+      renderInventory();
+    }
+
+    let message = result.msg;
+    let ok = true;
+    if (data.itemGranted) {
+      // itemGranted reports what the flashing tile drew, even if it could not be stored.
+      const icon = ITEM_ICONS[data.itemGranted] || '';
+      const wasAdded = localInventory.length > prevCount;
+      message = wasAdded
+        ? `⚡ Flashing tile! You got ${icon} ${data.itemGranted}`
+        : `⚡ Flashing tile — ${icon} ${data.itemGranted} drawn, but your inventory is full (item lost)!`;
+      ok = wasAdded;
+    }
+
+    if (data.needsQuiz) {
+      if (data.itemGranted) showMsg('game-msg', message, ok);
       openQuiz();
     } else {
-      showMsg('game-msg', result.msg, true);
+      showMsg('game-msg', message, ok);
     }
     await pollState();
   } finally {
+    rollInProgress = false;
+    if (!iAmFinished) btn.disabled = false;
     pollTimer = setInterval(pollState, 2000);
   }
 }
@@ -333,6 +453,7 @@ async function openQuiz() {
   const q = await QuestionAPI.getRandom(sessionId);
   if (q.code !== 0) return showMsg('game-msg', q.msg, false);
   currentQuiz = { questionId: q.data.questionId, timerHandle: null };
+  $('quiz-title').innerText = '🔐 Cybersecurity Quiz';
   $('quiz-question').innerText = q.data.questionText;
   $('quiz-result').innerText = '';
   const optsEl = $('quiz-options');

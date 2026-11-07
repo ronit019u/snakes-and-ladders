@@ -355,63 +355,41 @@ function start(req, res) {
 }
 
 // ---------- POST /api/game/move ----------
+// ---------- POST /api/game/move ----------
 function move(req, res) {
     try {
         const playerId = req.session.playerId || req.body.playerId;
         const sessionId = req.session.sessionId || req.body.sessionId;
-        const { targetTile } = req.body;
+        const { targetTile, questionId, selectedOption } = req.body;
 
+        // 1. 验证身份
         if (!playerId || !sessionId) {
-            return res.json({
-                code: 2004,
-                data: null,
-                msg: 'Player not in a session'
-            });
+            return res.json({ code: 2004, data: null, msg: 'Player not in a session' });
         }
 
         const db = readDB();
         const session = db.sessions[sessionId];
         if (!session) {
-            return res.json({
-                code: 2003,
-                data: null,
-                msg: 'Session not found'
-            });
+            return res.json({ code: 2003, data: null, msg: 'Session not found' });
         }
 
         if (session.gameStatus !== 'InProgress') {
-            return res.json({
-                code: 2008,
-                data: null,
-                msg: 'Game is not in progress'
-            });
+            return res.json({ code: 2008, data: null, msg: 'Game is not in progress' });
         }
 
         const player = session.players.find(p => p.playerId === playerId);
         if (!player) {
-            return res.json({
-                code: 2004,
-                data: null,
-                msg: 'Player not found'
-            });
+            return res.json({ code: 2004, data: null, msg: 'Player not found' });
         }
 
         if (player.completedAt) {
-            return res.json({
-                code: 2020,
-                data: null,
-                msg: 'Player already finished the game'
-            });
+            return res.json({ code: 2020, data: null, msg: 'Player already finished the game' });
         }
 
-        // ---------- 模式2：答题后移动（带 targetTile） ----------
+        // ---------- 模式2：答题后移动（带 targetTile）---------- 
         if (targetTile !== undefined) {
             if (typeof targetTile !== 'number' || targetTile < 1 || targetTile > 100) {
-                return res.json({
-                    code: 2006,
-                    data: null,
-                    msg: 'Invalid target tile'
-                });
+                return res.json({ code: 2006, data: null, msg: 'Invalid target tile' });
             }
 
             player.currentTile = targetTile;
@@ -467,7 +445,61 @@ function move(req, res) {
             });
         }
 
-        // ---------- 模式1：掷骰子 ----------
+        // ---------- 模式1：掷骰子（需要先答题验证） ----------
+
+        // ---------- 模式1：掷骰子（需要先答题验证） ----------
+
+        // 如果带了答案 → 验证答案
+        if (questionId && selectedOption) {
+            const question = db.questions.find(q => q.questionId === questionId);
+            if (!question) {
+                return res.json({ code: 5000, data: null, msg: 'Question not found' });
+            }
+
+            const isCorrect = selectedOption === question.correctAnswer;
+            if (!isCorrect) {
+                // 答错：这道题已经消耗，换一道新题继续答；没题了就降级直接掷骰
+                const next = pickPrerollQuestion(db, session, questionId);
+                if (next) {
+                    writeDB(db);
+                    return res.json({
+                        code: 0,
+                        data: {
+                            correct: false,
+                            prerollQuiz: {
+                                questionId: next.questionId,
+                                questionText: next.questionText,
+                                options: next.options
+                            }
+                        },
+                        msg: 'Incorrect answer. Here is a new question.'
+                    });
+                }
+                // 题库耗尽：继续往下走，直接掷骰
+            }
+
+            // 答对了，继续执行掷骰（不返回，继续往下走）
+        } else {
+            // 没带答案 → 返回题目要求答题
+            const selected = pickPrerollQuestion(db, session);
+            if (selected) {
+                writeDB(db);
+                return res.json({
+                    code: 0,
+                    data: {
+                        prerollQuiz: {
+                            questionId: selected.questionId,
+                            questionText: selected.questionText,
+                            options: selected.options
+                        }
+                    },
+                    msg: 'Answer the question before rolling'
+                });
+            }
+            // 没有题目了，降级为普通掷骰（继续往下走）
+        }
+
+        // ---------- 执行掷骰 ----------
         const diceValue = gameLogic.generateDiceValue();
         const landingTile = gameLogic.calculateLandingTile(player.currentTile, diceValue);
 
@@ -550,7 +582,7 @@ function move(req, res) {
         let finalTile = landingTile;
 
         if (isFlashing) {
-            const effect = gameLogic.getFlashingTileEffect(landingTile, session.presets);
+            const effect = gameLogic.getFlashingTileEffect(session.presets);
             if (effect.type === 'item') {
                 itemGranted = effect.item;
                 if (!player.inventory) player.inventory = [];
@@ -604,11 +636,7 @@ function move(req, res) {
 
     } catch (error) {
         console.error('[Move Error]', error);
-        return res.json({
-            code: 5000,
-            data: null,
-            msg: 'Internal server error'
-        });
+        return res.json({ code: 5000, data: null, msg: 'Internal server error' });
     }
 }
 
@@ -885,6 +913,20 @@ function disconnect(req, res) {
             msg: 'Internal server error'
         });
     }
+}
+
+// 取一道本局未使用的题（可排除指定题目），只改内存，不写库
+function pickPrerollQuestion(db, session, excludeQuestionId) {
+    if (!session.usedQuestionIds) session.usedQuestionIds = [];
+
+    const usedIds = session.usedQuestionIds;
+    const available = db.questions.filter(q =>
+        !usedIds.includes(q.questionId) && q.questionId !== excludeQuestionId
+    );
+    if (available.length === 0) return null;
+    const selected = available[Math.floor(Math.random() * available.length)];
+    usedIds.push(selected.questionId);
+    return selected;
 }
 
 module.exports = {

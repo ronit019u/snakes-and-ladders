@@ -59,7 +59,13 @@ export const GameAPI = {
   join: (sessionId, username) => apiPost('/api/game/join', { sessionId, username }),
   getState: (sessionId) => apiGet(`/api/game/state/${sessionId}`),
   start: () => apiPost('/api/game/start'),
-  rollDice: () => apiPost('/api/game/move', {}),
+  // Pre-roll quiz flow (POST /api/game/move):
+  //   rollDice()                          -> asks for a pre-roll question (data.prerollQuiz) or, if the
+  //                                          question pool is exhausted, rolls straight away (data.diceValue)
+  //   rollDice(questionId, selectedOption) -> correct: rolls (data.diceValue);
+  //                                          wrong: { correct:false, prerollQuiz: <new question> }
+  rollDice: (questionId, selectedOption) =>
+    apiPost('/api/game/move', questionId && selectedOption ? { questionId, selectedOption } : {}),
   finalizeMove: (targetTile) => apiPost('/api/game/move', { targetTile }),
   useItem: (itemType, targetPlayerId) => apiPost('/api/game/item/use', { itemType, targetPlayerId }),
   disconnect: (sessionId, playerId) => apiPost('/api/game/player/disconnect', { sessionId, playerId })
@@ -108,7 +114,13 @@ export const AdminAPI = {
 // real players.
 export const BotAPI = {
   join: (sessionId, username) => apiPost('/api/game/join', { sessionId, username }, false, 'omit'),
-  rollDice: (sessionId, playerId) => apiPost('/api/game/move', { sessionId, playerId }, false, 'omit'),
+  rollDice: (sessionId, playerId, questionId, selectedOption) => apiPost(
+    '/api/game/move',
+    questionId && selectedOption
+      ? { sessionId, playerId, questionId, selectedOption }
+      : { sessionId, playerId },
+    false, 'omit'
+  ),
   finalizeMove: (sessionId, playerId, targetTile) => apiPost('/api/game/move', { sessionId, playerId, targetTile }, false, 'omit'),
   useItem: (sessionId, playerId, itemType, targetPlayerId) => apiPost('/api/game/item/use', { sessionId, playerId, itemType, targetPlayerId }, false, 'omit'),
   getRandomQuestion: (sessionId) => apiGet(`/api/question/random/${sessionId}`, 'omit'),

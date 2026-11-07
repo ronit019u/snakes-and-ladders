@@ -14,28 +14,6 @@ export function getTileNumber(row, col) {
   return isEvenRow ? base + col + 1 : base + (10 - col);
 }
 
-// Deterministic hash for flashing tile colors
-function hashTile(tile) {
-  let h = tile ^ 0x9e3779b9;
-  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
-  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
-  h = h ^ (h >>> 16);
-  return (h >>> 0) / 4294967296;
-}
-
-export function getFlashingTileColors(blueProb = 30, redProb = 30) {
-  const blueFrac = blueProb / 100;
-  const redFrac = redProb / 100;
-  const colors = {};
-  FLASHING_TILES.forEach((tile) => {
-    const rand = hashTile(tile);
-    if (rand < blueFrac) colors[tile] = 'blue';
-    else if (rand < blueFrac + redFrac) colors[tile] = 'red';
-    else colors[tile] = 'none';
-  });
-  return colors;
-}
-
 // Detect if a move is on a ladder or snake
 function getPathType(fromTile, toTile) {
   for (const [bottom, top] of LADDERS) {
@@ -48,7 +26,7 @@ function getPathType(fromTile, toTile) {
 }
 
 // ----- Build board tiles and SVG connections -----
-export function buildBoard(containerEl, flashColors = null) {
+export function buildBoard(containerEl) {
   containerEl.innerHTML = '';
   const tileEls = {};
 
@@ -66,12 +44,9 @@ export function buildBoard(containerEl, flashColors = null) {
       if (LADDERS.some(([bottom]) => bottom === tileNum)) tile.classList.add('ladder-start');
       if (SNAKES.some(([head]) => head === tileNum)) tile.classList.add('snake-head');
 
-      if (FLASHING_TILES.includes(tileNum)) {
-        tile.classList.add('flash');
-        const color = flashColors?.[tileNum] || getFlashingTileColors(30, 30)[tileNum];
-        if (color === 'blue') tile.classList.add('flash-blue');
-        else if (color === 'red') tile.classList.add('flash-red');
-      }
+      // Flashing tiles all behave the same now (one weighted item grant), so
+      // there is no blue/red variant any more.
+      if (FLASHING_TILES.includes(tileNum)) tile.classList.add('flash');
 
       if (tileNum === 100) tile.classList.add('finish');
 
