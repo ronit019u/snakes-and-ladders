@@ -5,6 +5,7 @@ export const GameAPI = {
   create: (username) => apiPost('/api/game/create', { username }),
   join: (sessionId, username) => apiPost('/api/game/join', { sessionId, username }),
   getState: (sessionId) => apiGet(`/api/game/state/${sessionId}`),
+  setCharacter: (characterId) => apiPost('/api/game/character', { characterId }),
   start: () => apiPost('/api/game/start'),
   // Pre-roll quiz flow (POST /api/game/move):
   //   rollDice()                           -> asks for a pre-roll question (data.prerollQuiz) or, if the

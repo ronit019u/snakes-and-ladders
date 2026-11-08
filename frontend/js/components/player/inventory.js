@@ -5,6 +5,7 @@ import { GameAPI } from '../../api/index.js';
 import { playerState } from '../../state/playerState.js';
 import { ITEM_ICONS, TARGETED_ITEMS, MAX_INVENTORY } from '../../config/constants.js';
 import { handleApiError } from './gameControls.js';
+import { tokenBadgeHtml } from '../tokenBadge.js';
 
 export function renderInventory() {
   const el = $('inventory');
@@ -55,7 +56,7 @@ async function useTargetedItem(itemType, slotIndex) {
   const listEl = $('target-list');
   listEl.innerHTML = others.map(p =>
     `<div class="target-row" data-pid="${p.playerId}">
-      <span><span class="swatch" style="background:${p.tokenColor}"></span>${p.username}</span>
+      <span>${tokenBadgeHtml(p)}${p.username}</span>
       <span>Tile ${p.currentTile}</span>
     </div>`
   ).join('');

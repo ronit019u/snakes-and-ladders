@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Item FX preview</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .demo-bar { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+  .demo-bar button { margin-top:0; }
+  .demo-note { font-size:12px; color:#94a3b8; margin-top:6px; }
+</style>
+</head>
+<body>
+  <div class="panel">
+    <h1>🎬 Rocket / Arrow / Bomb preview</h1>
+    <div class="board" id="board"></div>
+    <div class="demo-bar">
+      <button class="btn-primary" id="b-rocket">🚀 Rocket (blue +5)</button>
+      <button class="btn-primary" id="b-arrow">🏹 Arrow (blue → red, -3)</button>
+      <button class="btn-primary" id="b-bomb">💣 Bomb (blue → red, -5)</button>
+      <button class="btn-secondary" id="b-reset">Reset</button>
+    </div>
+    <div class="demo-note">Needs to be served over HTTP (e.g. <code>python3 -m http.server</code> in this folder), then open <code>/fx-demo.html</code>. Tokens move after the effect lands, exactly like the real game.</div>
+  </div>
+
+<script type="module">
+import { buildBoard, renderTokens, playRocketEffect, playArrowEffect, playBombEffect, getFxHoldRemaining } from './js/components/board/index.js';
+import { initAudio } from './js/services/audio/index.js';
+import { sleep } from './js/utils/async.js';
+
+const START = [
+  { playerId: 'a', username: 'Blue', tokenColor: '#38bdf8', currentTile: 14 },
+  { playerId: 'b', username: 'Red',  tokenColor: '#f87171', currentTile: 38 },
+  { playerId: 'c', username: 'Green', tokenColor: '#34d399', currentTile: 61 }
+];
+let players = START.map(p => ({ ...p }));
+const $ = (id) => document.getElementById(id);
+const tile = (id) => players.find(p => p.playerId === id).currentTile;
+
+buildBoard($('board'));
+renderTokens(players);
+
+// Mirrors the real flow: FX starts, tokens re-render once the hold is over.
+async function apply(mutate) {
+  initAudio();
+  const old = players.map(p => ({ ...p }));
+  mutate(players);
+  await sleep(getFxHoldRemaining());
+  renderTokens(players, old);
+}
+
+$('b-rocket').onclick = () => {
+  const from = tile('a'), to = Math.min(100, from + 5);
+  playRocketEffect(from, to, to - from);
+  apply(ps => { ps.find(p => p.playerId === 'a').currentTile = to; });
+};
+$('b-arrow').onclick = () => {
+  const t = tile('b'), n = Math.max(1, t - 3);
+  playArrowEffect(tile('a'), t, t - n);
+  apply(ps => { ps.find(p => p.playerId === 'b').currentTile = n; });
+};
+$('b-bomb').onclick = () => {
+  const t = tile('b'), n = Math.max(1, t - 5);
+  playBombEffect(t, tile('a'), t - n);
+  apply(ps => { ps.find(p => p.playerId === 'b').currentTile = n; });
+};
+$('b-reset').onclick = () => {
+  players = START.map(p => ({ ...p }));
+  renderTokens(players);
+};
+</script>
+</body>
+</html>

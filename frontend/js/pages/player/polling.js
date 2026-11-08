@@ -9,6 +9,8 @@ import { lockGameControls } from '../../components/player/gameControls.js';
 import { renderWaitingPlayers } from '../../components/player/leaderboard.js';
 import { enterGameScreen, renderGame } from '../../components/player/gameScreen.js';
 import { handleGameOver } from '../../components/player/gameOver.js';
+import { getFxHoldRemaining } from '../../components/board/index.js';
+import { sleep } from '../../utils/async.js';
 
 export function startPolling() {
   stopPolling();
@@ -20,11 +22,15 @@ export function stopPolling() {
   playerState.pollTimer = null;
 }
 
+// Only the newest poll gets to render after an FX hold (see below).
+let pollSeq = 0;
+
 export async function pollState() {
   if (!playerState.sessionId) return;
+  const seq = ++pollSeq;
   const r = await GameAPI.getState(playerState.sessionId);
   if (r.code !== 0) return;
-  const { gameStatus, activePlayers, winnerId, leaderboardDisplayCount, presets, startedAt } = r.data;
+  const { gameStatus, activePlayers, winnerId, leaderboardDisplayCount, presets, startedAt, characters } = r.data;
 
   if (startedAt) playerState.sessionStartedAt = startedAt;
   playerState.leaderboardCount = leaderboardDisplayCount || presets?.leaderboardDisplayCount || 5;
@@ -38,9 +44,16 @@ export async function pollState() {
   }
 
   if (gameStatus === 'waiting') {
-    renderWaitingPlayers(activePlayers);
+    renderWaitingPlayers(activePlayers, characters);
   } else if (gameStatus === 'InProgress') {
     if (document.getElementById('game-screen').classList.contains('hidden')) enterGameScreen();
+    // A rocket / arrow / bomb animation is in flight: let it reach its target
+    // before the tokens jump, so the hit and the knock-back line up.
+    const hold = getFxHoldRemaining();
+    if (hold > 0) {
+      await sleep(hold);
+      if (seq !== pollSeq) return; // a newer poll took over and will render
+    }
     renderGame(activePlayers, playerState.prevPlayers);
     playerState.prevPlayers = activePlayers.map(p => ({ ...p }));
   } else if (gameStatus === 'Completed') {

@@ -4,5 +4,6 @@ export { LADDERS, SNAKES, FLASHING_TILES } from './boardLayout.js';
 export { buildBoard } from './boardRenderer.js';
 export { renderTokens } from './tokens.js';
 export {
-  playBombEffect, playArrowEffect, playRocketEffect, playEarthquakeEffect
+  playBombEffect, playArrowEffect, playRocketEffect, playEarthquakeEffect,
+  getFxHoldRemaining
 } from './effects.js';

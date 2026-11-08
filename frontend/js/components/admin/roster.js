@@ -3,6 +3,7 @@
 import { $ } from '../../utils/dom.js';
 import { formatDuration } from '../../utils/time.js';
 import { adminState } from '../../state/adminState.js';
+import { tokenBadgeHtml } from '../tokenBadge.js';
 
 export function renderRoster(players) {
   $('player-count').innerText = players.length;
@@ -13,7 +14,7 @@ export function renderRoster(players) {
         const t = formatDuration(adminState.sessionStartedAt, p.completedAt);
         status = `🏁 ${t || 'Finished'}`;
       }
-      return `<div class="player-row"><span><span class="swatch" style="background:${p.tokenColor}"></span>${p.username}</span><span>${status}</span></div>`;
+      return `<div class="player-row"><span>${tokenBadgeHtml(p)}${p.username}</span><span>${status}</span></div>`;
     })
     .join('');
 }
