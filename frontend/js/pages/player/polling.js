@@ -20,10 +20,23 @@ export function stopPolling() {
   playerState.pollTimer = null;
 }
 
+// Renders one snapshot of the players on the board + leaderboard and
+// remembers it, so the next snapshot can animate from it.
+function renderSnapshot(players) {
+  renderGame(players, playerState.prevPlayers);
+  playerState.prevPlayers = players.map(p => ({ ...p }));
+}
+
 export async function pollState() {
   if (!playerState.sessionId) return;
+  const seq = ++playerState.pollSeq;
   const r = await GameAPI.getState(playerState.sessionId);
   if (r.code !== 0) return;
+  // Responses can arrive out of order (the socket triggers extra polls). Never
+  // let an older one overwrite a newer one - in particular a stale "InProgress"
+  // arriving after the final "Completed" snapshot.
+  if (seq < playerState.appliedSeq) return;
+  playerState.appliedSeq = seq;
   const { gameStatus, activePlayers, winnerId, leaderboardDisplayCount, presets, startedAt } = r.data;
 
   if (startedAt) playerState.sessionStartedAt = startedAt;
@@ -41,10 +54,12 @@ export async function pollState() {
     renderWaitingPlayers(activePlayers);
   } else if (gameStatus === 'InProgress') {
     if (document.getElementById('game-screen').classList.contains('hidden')) enterGameScreen();
-    renderGame(activePlayers, playerState.prevPlayers);
-    playerState.prevPlayers = activePlayers.map(p => ({ ...p }));
+    renderSnapshot(activePlayers);
   } else if (gameStatus === 'Completed') {
-    stopPolling();
-    handleGameOver({ winnerId, activePlayers });
+    // The final move is what ends the game, so this snapshot is the first
+    // one that contains it: draw it BEFORE showing the podium.
+    if (document.getElementById('game-screen').classList.contains('hidden')) enterGameScreen({ music: false });
+    renderSnapshot(activePlayers);
+    handleGameOver({ winnerId, activePlayers, rendered: true });
   }
 }
