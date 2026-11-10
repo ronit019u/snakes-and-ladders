@@ -52,8 +52,10 @@ function applyPlayerFinish(session, player) {
 
     // 统计已完成玩家
     const finishedPlayers = session.players.filter(p => p.completedAt);
-
-    if (finishedPlayers.length >= 3) {
+    
+    // 3 人完赛结束；不足 3 人时按实际人数收尾（1 人局 1 人完赛即结束）
+    const requiredFinishers = Math.max(1, Math.min(3, session.players.length));
+    if (finishedPlayers.length >= requiredFinishers) {
         session.gameStatus = 'Completed';
         session.completedAt = new Date().toISOString();
 

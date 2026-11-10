@@ -105,10 +105,11 @@ function submitBonusAnswerLogic(sessionId, playerId, bonusRoundId, selectedOptio
             player.currentTile = Math.max(1, player.currentTile - penalty);
             writeDB(db);
             events.push({
-                event: 'bonus_result',
+                event: 'move_update',
                 data: {
-                    bonusRoundId, winnerPlayerId: null, correct: false,
-                    penalty, newTile: player.currentTile
+                    playerId,
+                    currentTile: player.currentTile,
+                    activePlayers: buildPublicPlayerList(session)
                 }
             });
             return {
