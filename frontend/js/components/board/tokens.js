@@ -3,6 +3,7 @@
 // path when the move was a snake/ladder).
 import { getPathType } from './boardLayout.js';
 import { playSnakeEffect, playLadderEffect } from './effects.js';
+import { playerState } from '../../state/playerState.js';
 
 export function renderTokens(players, oldPlayers = null) {
   document.querySelectorAll('.token-container').forEach(c => c.innerHTML = '');
@@ -13,11 +14,18 @@ export function renderTokens(players, oldPlayers = null) {
     if (!cell) return;
     const token = document.createElement('div');
     token.className = 'token';
+    if (p.playerId === playerState.playerId) token.classList.add('token-me');
     token.dataset.playerId = p.playerId;
-    token.title = p.username;
-    token.style.backgroundColor = p.tokenColor;
+    token.title = p.characterName ? `${p.characterName} - ${p.username}` : p.username;
     token.style.color = p.tokenColor;
+    token.innerHTML = `<span class="tok-face">${p.characterEmoji || ''}</span>`;
     cell.appendChild(token);
+  });
+
+  // Several players can share one tile; shrink the tokens on busy tiles so
+  // they stay readable instead of piling on top of each other.
+  document.querySelectorAll('.token-container').forEach(c => {
+    c.classList.toggle('crowded', c.children.length > 4);
   });
 
   if (oldPlayers && Array.isArray(oldPlayers)) {

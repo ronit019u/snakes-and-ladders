@@ -40,6 +40,30 @@ const SFX = {
     playNoise(getCtx(), getSfxGain(), { duration: 0.3, attack: 0.001, decay: 0.28, peak: 0.6, filterType: 'bandpass', filterFreq: 3000, filterFreqEnd: 800, q: 1.2 });
   },
 
+  // Whoosh of a bomb being lobbed; the explosion ('bomb') plays on landing.
+  bombThrow() {
+    const ctx = getCtx(), out = getSfxGain();
+    playNoise(ctx, out, { duration: 0.45, attack: 0.08, decay: 0.35, peak: 0.35, filterType: 'bandpass', filterFreq: 500, filterFreqEnd: 1800, q: 1.1 });
+    playNoise(ctx, out, { duration: 0.5, attack: 0.02, decay: 0.45, peak: 0.12, filterType: 'highpass', filterFreq: 5000, q: 0.7 });
+  },
+
+  // Short "thunk" of an arrow sticking into its target.
+  arrowHit() {
+    const ctx = getCtx(), out = getSfxGain();
+    playTone(ctx, out, { freq: 240, freqEnd: 80, type: 'sine', duration: 0.14, attack: 0.001, decay: 0.13, peak: 0.55 });
+    playNoise(ctx, out, { duration: 0.06, attack: 0.001, decay: 0.06, peak: 0.45, filterType: 'highpass', filterFreq: 2500 });
+  },
+
+  // Bright little chime when the rocket lands.
+  rocketLand() {
+    [880, 1174.66, 1567.98].forEach((freq, i) => {
+      setTimeout(() => {
+        const ctx = getCtx();
+        if (ctx) playTone(ctx, getSfxGain(), { freq, type: 'triangle', duration: 0.16, decay: 0.16, peak: 0.28 });
+      }, i * 55);
+    });
+  },
+
   // Sustained hiss with a fast tremolo so it reads as "sssss" rather than
   // a flat noise burst.
   snake() {

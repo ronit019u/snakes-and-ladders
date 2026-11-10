@@ -1,4 +1,5 @@
 // services/playerHelpers.js
+const { getCharacter } = require('./characters');
 
 /**
  * 构建公开的玩家列表（按 currentTile 降序排列）
@@ -15,6 +16,9 @@ function buildPublicPlayerList(session) {
             username: p.username,
             currentTile: p.currentTile,
             tokenColor: p.tokenColor,
+            characterId: p.characterId || null,
+            characterEmoji: (getCharacter(p.characterId) || {}).emoji || null,
+            characterName: (getCharacter(p.characterId) || {}).name || null,
             turnStatus: p.turnStatus,
             completedAt: p.completedAt || null   // 供前端计算前三名
         }));

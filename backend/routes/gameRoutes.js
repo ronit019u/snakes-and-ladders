@@ -12,6 +12,9 @@ router.post('/join', gameController.join);
 // GET /api/game/state/:sessionId
 router.get('/state/:sessionId', gameController.getState);
 
+// POST /api/game/character - 选择角色（仅等候室）
+router.post('/character', gameController.selectCharacter);
+
 // POST /api/game/start - 开始游戏
 router.post('/start', gameController.start);
 

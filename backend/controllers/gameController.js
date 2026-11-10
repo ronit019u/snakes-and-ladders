@@ -3,6 +3,7 @@ const { readDB, writeDB, generateId, generateRoomId } = require('../services/dbS
 const gameLogic = require('../services/gameLogic');
 const socketService = require('../services/socketService');
 const { buildPublicPlayerList, applyPlayerFinish } = require('../services/playerHelpers');
+const { CHARACTERS, getCharacter, getNextCharacterId } = require('../services/characters');
 
 // 颜色池（25种，来自 SRS 9.3）
 const COLOR_PALETTE = [
@@ -79,6 +80,7 @@ function create(req, res) {
                     username: finalUsername,
                     currentTile: 0,
                     tokenColor: getNextColor([]),
+                    characterId: getNextCharacterId([]),
                     turnStatus: 'active',
                     inventory: [],
                     completedAt: null
@@ -92,6 +94,7 @@ function create(req, res) {
             sessionId: sessionId,
             playerId: playerId,
             tokenColor: db.sessions[sessionId].players[0].tokenColor,
+            characterId: db.sessions[sessionId].players[0].characterId,
             maxPlayers: 25,
             gameStatus: 'waiting'
         };
@@ -201,6 +204,7 @@ function join(req, res) {
             username: finalUsername,
             currentTile: 0,
             tokenColor: getNextColor(session.players),
+            characterId: getNextCharacterId(session.players),
             turnStatus: 'active',
             inventory: [],
             completedAt: null
@@ -217,7 +221,8 @@ function join(req, res) {
         const responseData = {
             sessionId: sessionId,
             playerId: newPlayerId,
-            tokenColor: newPlayer.tokenColor
+            tokenColor: newPlayer.tokenColor,
+            characterId: newPlayer.characterId
         };
 
         return saveSessionAndRespond(req, res, newPlayerId, sessionId, responseData, 'Joined successfully');
@@ -255,6 +260,7 @@ function getState(req, res) {
             startedAt: session.startedAt || null,
             completedAt: session.completedAt || null,
             activePlayers: buildPublicPlayerList(session),
+            characters: CHARACTERS,
             leaderboardDisplayCount: session.presets?.leaderboardDisplayCount || 5
         };
 
@@ -271,6 +277,53 @@ function getState(req, res) {
             data: null,
             msg: 'Internal server error'
         });
+    }
+}
+
+// ---------- POST /api/game/character ----------
+// Waiting room only: a player picks the character that represents them.
+// Two players in one session can never hold the same character.
+function selectCharacter(req, res) {
+    try {
+        const playerId = req.session.playerId;
+        const sessionId = req.session.sessionId;
+        const { characterId } = req.body || {};
+
+        if (!playerId || !sessionId) {
+            return res.json({ code: 2004, data: null, msg: 'Player not in a session' });
+        }
+        const db = readDB();
+        const session = db.sessions[sessionId];
+        if (!session) {
+            return res.json({ code: 2003, data: null, msg: 'Session not found' });
+        }
+        if (session.gameStatus !== 'waiting') {
+            return res.json({ code: 2005, data: null, msg: 'Characters can only be changed before the game starts' });
+        }
+        const player = session.players.find(p => p.playerId === playerId);
+        if (!player) {
+            return res.json({ code: 2004, data: null, msg: 'Player not in a session' });
+        }
+        if (!getCharacter(characterId)) {
+            return res.json({ code: 1001, data: null, msg: 'Unknown character' });
+        }
+        const takenBy = session.players.find(p => p.characterId === characterId && p.playerId !== playerId);
+        if (takenBy) {
+            return res.json({ code: 2010, data: null, msg: 'That character is already taken' });
+        }
+
+        player.characterId = characterId;
+        writeDB(db);
+
+        socketService.broadcastGameEvent(sessionId, 'player_joined', {
+            playerId,
+            activePlayers: buildPublicPlayerList(session)
+        });
+
+        return res.json({ code: 0, data: { characterId }, msg: 'Character selected' });
+    } catch (error) {
+        console.error('[Select Character Error]', error);
+        return res.json({ code: 5000, data: null, msg: 'Internal server error' });
     }
 }
 
@@ -933,6 +986,7 @@ module.exports = {
     create,
     join,
     getState,
+    selectCharacter,
     start,
     move,
     useItem,
