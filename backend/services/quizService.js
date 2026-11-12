@@ -10,6 +10,23 @@ function getRandomQuestion(sessionId) {
             return { code: 2003, data: null, msg: 'Session not found' };
         }
 
+        if (session.gameStatus !== 'InProgress') {
+            return { code: 2008, data: null, msg: 'Game is not in progress' };
+        }
+
+        if (!playerId) {
+            return { code: 2004, data: null, msg: 'Player not in a session' };
+        }
+
+        const player = session.players.find(p => p.playerId === playerId);
+        if (!player) {
+            return { code: 2004, data: null, msg: 'Player not found' };
+        }
+
+        if (player.completedAt) {
+            return { code: 2020, data: null, msg: 'Player already finished' };
+        }
+        
         if (!session.usedQuestionIds) session.usedQuestionIds = [];
         const usedIds = session.usedQuestionIds;
         const availableQuestions = db.questions.filter(q => !usedIds.includes(q.questionId));

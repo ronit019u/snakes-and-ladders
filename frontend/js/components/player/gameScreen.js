@@ -7,11 +7,11 @@ import { buildBoard, renderTokens } from '../board/index.js';
 import { renderInventory } from './inventory.js';
 import { renderLeaderboard } from './leaderboard.js';
 
-export function enterGameScreen({ music = true } = {}) {
+export function enterGameScreen() {
   $('waiting-screen').classList.add('hidden');
   $('game-screen').classList.remove('hidden');
   initAudio();
-  if (music) startBgm();
+  startBgm();
   playerState.boardTileEls = buildBoard($('board'));
   $('my-status').innerText = `You: ${playerState.myUsername}`;
   renderInventory();

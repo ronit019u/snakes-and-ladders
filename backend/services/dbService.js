@@ -35,21 +35,11 @@ const defaultDB = {
       "leaderboardDisplayCount": 5,
       
       "flashingTile": {
-        "blueProb": 80,
-        "redProb": 20,
-        "blueEffect": {
-          "type": "item",
-          "itemProb": 100,
-          "itemPool": [
-            { "type": "rocket", "weight": 5 },
-            { "type": "bomb", "weight": 5 },
-            { "type": "arrow", "weight": 2 }
-          ]
-        },
-        "redEffect": {
-          "type": "penalty",
-          "penaltySteps": 2
-        }
+        "rewardPool": [
+          { "type": "rocket", "weight": 5 },
+          { "type": "bomb", "weight": 5 },
+          { "type": "arrow", "weight": 2 }
+        ]
       },
       
       "earthquake": {

@@ -9,6 +9,11 @@ function startBonusRound(req, res) {
 
         if (result.code === 0) {
             socketService.broadcastGameEvent(sessionId, 'bonus_round_started', result.data);
+            socketService.scheduleBonusExpiry(
+                sessionId,
+                result.data.bonusRoundId,
+                result.data.bonusTimeout
+            );
         }
         return res.json(result);
     } catch (error) {

@@ -63,6 +63,57 @@ function createRoom({ username, presetId }) {
     }
 }
 
+// CSV 分隔符自动识别：逗号 / 分号 / 制表符 / 竖线
+// 题目文本里逗号很常见，所以允许用分号等做分隔符，同时兼容旧的逗号 CSV。
+function detectDelimiter(headerLine) {
+    const candidates = ['\t', ';', '|', ','];
+    let best = ',';
+    let bestCount = 0;
+
+    for (const delimiter of candidates) {
+        const count = headerLine.split(delimiter).length - 1;
+        if (count > bestCount) {
+            best = delimiter;
+            bestCount = count;
+        }
+    }
+    return best;
+}
+
+// 按指定分隔符切分一行，支持双引号包裹的字段和 "" 转义
+function parseDelimitedLine(line, delimiter) {
+    const parts = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+
+        if (inQuotes) {
+            if (ch === '"') {
+                if (line[i + 1] === '"') {
+                    current += '"';
+                    i++;
+                } else {
+                    inQuotes = false;
+                }
+            } else {
+                current += ch;
+            }
+        } else if (ch === '"') {
+            inQuotes = true;
+        } else if (ch === delimiter) {
+            parts.push(current.trim());
+            current = '';
+        } else {
+            current += ch;
+        }
+    }
+
+    parts.push(current.trim());
+    return parts;
+}
+
 // ---------- POST /api/admin/questions/upload ----------
 function uploadQuestions({ file, mode }) {
     try {
@@ -81,7 +132,7 @@ function uploadQuestions({ file, mode }) {
         }
 
         const db = readDB();
-        let newQuestions = [];
+        const newQuestions = [];
 
         // ---------- CSV ----------
         if (ext === 'csv') {
@@ -92,7 +143,15 @@ function uploadQuestions({ file, mode }) {
                 content = file.data.toString('utf-8');
             }
 
-            const lines = content.split('\n').filter(line => line.trim() !== '');
+            // 去掉 Excel 可能写入的 BOM
+            content = content.replace(/^\uFEFF/, '');
+
+            const lines = content.split(/\r?\n/).filter(line => line.trim() !== '');
+            if (lines.length === 0) {
+                return { code: 2013, data: null, msg: 'No valid questions found in file' };
+            }
+
+            const delimiter = detectDelimiter(lines[0]);
             const startIndex = lines[0].toLowerCase().includes('question') ? 1 : 0;
 
             const maxId = db.questions.reduce((max, q) => {
@@ -102,7 +161,7 @@ function uploadQuestions({ file, mode }) {
             let counter = 0;
 
             for (let i = startIndex; i < lines.length; i++) {
-                const parts = lines[i].split(',').map(s => s.trim().replace(/^"|"$/g, ''));
+                const parts = parseDelimitedLine(lines[i], delimiter);
                 if (parts.length >= 7) {
                     counter++;
                     newQuestions.push({

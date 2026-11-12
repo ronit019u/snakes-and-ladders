@@ -196,6 +196,7 @@ function getSessionState(sessionId) {
     try {
         const db = readDB();
         const session = db.sessions[sessionId];
+        const preset = gameLogic.getPreset(session.presets);
 
         if (!session) {
             return { code: 2003, data: null, msg: 'Session not found' };
@@ -211,7 +212,18 @@ function getSessionState(sessionId) {
                 completedAt: session.completedAt || null,
                 activePlayers: buildPublicPlayerList(session),
                 characters: CHARACTERS,
-                leaderboardDisplayCount: session.presets?.leaderboardDisplayCount || 5
+                leaderboardDisplayCount: session.presets?.leaderboardDisplayCount || 5,
+                presets: {
+                    maxPlayers: preset.maxPlayers,
+                    diceMax: preset.diceMax,
+                    quizTimeout: preset.quizTimeout,
+                    bonusTimeout: preset.bonusTimeout,
+                    leaderboardDisplayCount: preset.leaderboardDisplayCount,
+                    flashingTile: preset.flashingTile,
+                    earthquake: preset.earthquake,
+                    bonus: preset.bonus,
+                    items: preset.items
+                },
             },
             msg: 'success'
         };

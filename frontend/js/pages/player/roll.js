@@ -67,8 +67,7 @@ export async function handleRoll() {
     await pollState();
   } finally {
     playerState.rollInProgress = false;
-    // After game over the button stays locked and polling stays stopped.
-    if (!playerState.iAmFinished && !playerState.gameOver) btn.disabled = false;
-    if (!playerState.gameOver) startPolling();
+    if (!playerState.iAmFinished) btn.disabled = false;
+    startPolling();
   }
 }

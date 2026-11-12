@@ -15,7 +15,7 @@ function startBonusRoundLogicOnly(sessionId, db) {
 
     if (!session) return { code: 2003, data: null, msg: 'Session not found' };
     if (session.gameStatus !== 'InProgress') return { code: 2008, data: null, msg: 'Game is not in progress' };
-
+    const preset = gameLogic.getPreset(session.presets);
     const existing = Object.values(activeBonusRounds).find(r => r.sessionId === sessionId);
     if (existing) return { code: 2015, data: null, msg: 'A bonus round is already active for this session' };
 
@@ -44,7 +44,8 @@ function startBonusRoundLogicOnly(sessionId, db) {
             bonusRoundId,
             questionId: selected.questionId,
             questionText: selected.questionText,
-            options: selected.options
+            options: selected.options,
+            bonusTimeout: preset.bonusTimeout
         },
         msg: 'Bonus round started',
         _db,

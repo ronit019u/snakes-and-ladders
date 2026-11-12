@@ -179,7 +179,7 @@ function triggerTimedBonusRound(sessionId) {
             return;
         }
         broadcastGameEvent(sessionId, 'bonus_round_started', result.data);
-        scheduleBonusExpiry(sessionId, result.data.bonusRoundId);
+        scheduleBonusExpiry(sessionId, result.data.bonusRoundId, result.data.bonusTimeout);
     } catch (err) {
         console.error('[SocketService] bonus round failed:', err);
     }
@@ -191,7 +191,11 @@ function triggerTimedBonusRound(sessionId) {
 // timer-based trigger above is wired up. Needs a schema field added
 // first (e.g. `lastBonusTile` per player) before this can be built.
 
-function scheduleBonusExpiry(sessionId, bonusRoundId) {
+function scheduleBonusExpiry(sessionId, bonusRoundId, timeoutSeconds) {
+    const delayMs = Number(timeoutSeconds) > 0
+        ? Number(timeoutSeconds) * 1000
+        : BONUS_ANSWER_WINDOW_MS;
+
     bonusExpiryTimers[bonusRoundId] = setTimeout(() => {
         delete bonusExpiryTimers[bonusRoundId];
 
@@ -200,7 +204,7 @@ function scheduleBonusExpiry(sessionId, bonusRoundId) {
             bonusService.expireBonusRound(bonusRoundId);
             broadcastGameEvent(sessionId, 'bonus_round_expired', { bonusRoundId });
         }
-    }, BONUS_ANSWER_WINDOW_MS);
+    }, delayMs);
 }
 
 function clearBonusExpiry(bonusRoundId) {

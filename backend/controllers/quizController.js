@@ -3,8 +3,9 @@ const quizService = require('../services/quizService');
 
 // GET /api/question/random/:sessionId
 function getRandomQuestion(req, res) {
-    const result = quizService.getRandomQuestion(req.params.sessionId);
-    return res.json(result);
+    const body = req.body || {};
+    const playerId = req.session.playerId || req.query.playerId || body.playerId;
+    return res.json(quizService.getRandomQuestion(req.params.sessionId, playerId));
 }
 
 // POST /api/question/validate

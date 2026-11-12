@@ -18,9 +18,6 @@ export const playerState = {
   iAmFinished: false,
   sessionStartedAt: null,
   rollInProgress: false,
-  gameOver: false,      // set once game_over / Completed has been handled
-  pollSeq: 0,           // id of the newest poll request sent
-  appliedSeq: 0,        // id of the newest poll response rendered
 
   // Components call this to re-poll the server. pages/player/playerPage.js
   // sets it to pollState(); keeping it here avoids circular imports.

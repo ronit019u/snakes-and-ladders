@@ -1,3 +1,32 @@
+Changelog – 2026-11-11
+GET /api/question/random/:sessionId now validates that the game is InProgress and that the requesting player exists, belongs to the session and has not finished; the playerId can come from the session cookie, the ?playerId= query string, or the request body for the cookie-less bot flow.
+Bonus round expiry now reads preset.bonusTimeout instead of a hardcoded 15 seconds; both timed and manually started bonus rounds schedule their expiry with the configured timeout.
+GET /api/game/state/:sessionId now returns a safe presets subset (quizTimeout, bonusTimeout, leaderboardDisplayCount, flashingTile, earthquake, bonus, items) so clients no longer fall back to defaults.
+Updated the default preset in dbService.defaultDB to the new flashingTile.rewardPool structure and removed the legacy blueProb/redProb/blueEffect/redEffect fields.
+
+
+Changelog – 2026-11-10
+Refactored the controller layer to enforce the Single-Writer Principle: gameController, quizController and adminController no longer read or write db.json; validation, game rules and persistence now live in services.
+Added services/quizService.js for random-question selection and answer validation; quizController is now a thin HTTP adapter.
+Added services/adminService.js for admin room creation, CSV/XLSX question upload, and preset save/load/list; adminController now only checks the admin session and returns service results.
+Extended services/gameService.js with createSession, joinSession, getSessionState, selectCharacter, startGame, move and useItem; these return { code, data, msg, events } and no longer call socketService directly.
+gameController now only saves the express-session on create/join, broadcasts the events returned by the service, starts/stops session timers on game_started/game_over, and returns responses.
+Removed the dead flashing-tile penalty branch from the move logic; landing on a flashing tile now always uses the reward-pool path.
+Fixed bonus round wrong answers: a wrong answer now broadcasts move_update instead of bonus_result, so other players keep waiting for the first correct answer instead of having their bonus dialog closed.
+Removed the unused triggeredBonusTiles field from session creation in gameService.createSession and adminService.createRoom; the progression-based bonus trigger was removed earlier.
+Changed the game-end condition for small sessions: the game now completes when min(3, total players) finish, so 1-2 player games no longer remain InProgress forever.
+
+
+Changelog – 2026-11-05
+Merged the backend of feature/preroll-quiz into main: every dice roll now requires answering a question first, and the roll only executes after a correct answer.
+Removed the progression-based bonus trigger (checkTileBonusTrigger) together with the stale call sites, import, and bonusController dependency reintroduced by the merge; bonus rounds are now triggered only by the admin-configured bonus.interval timer.
+Changed the pre-roll quiz response to a prerollQuiz object (questionId, questionText, options) and removed the old needQuiz flag; needsQuiz still means the snake/ladder quiz only.
+Added wrong-answer reissue: a wrong pre-roll answer consumes the current question and returns a new one; when the question pool is exhausted, the request falls back to a direct roll.
+Simplified the flashing tile: landing on it now grants an item directly from the admin-configured flashingTile.rewardPool by weight; the effect no longer evaluates blue/red probabilities or penalties, and legacy blueEffect.itemPool presets are migrated automatically.
+
+
+
+
 Changelog – 2026-09-16
 Fixed ReferenceError: removed the stale broadcastBonusResult entry from socketService module.exports, which was left behind after the function was deleted in the Single-Writer refactor.
 
