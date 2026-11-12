@@ -572,16 +572,45 @@ button {
   width: 80px;
   height: 80px;
   border-radius: 18px;
-  background: white !important;
-  color: #1e293b !important;
-  border: 1px solid #ccc !important;
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border: none !important;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 52px;
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  padding: 14px;
+  box-sizing: border-box;
   backface-visibility: hidden;
 }
+.face .pip {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  place-self: center;
+}
+/* pip positions on a 3x3 grid */
+.face[data-n="1"] .pip:nth-child(1) { grid-area: 2 / 2; }
+.face[data-n="2"] .pip:nth-child(1) { grid-area: 1 / 1; }
+.face[data-n="2"] .pip:nth-child(2) { grid-area: 3 / 3; }
+.face[data-n="3"] .pip:nth-child(1) { grid-area: 1 / 1; }
+.face[data-n="3"] .pip:nth-child(2) { grid-area: 2 / 2; }
+.face[data-n="3"] .pip:nth-child(3) { grid-area: 3 / 3; }
+.face[data-n="4"] .pip:nth-child(1) { grid-area: 1 / 1; }
+.face[data-n="4"] .pip:nth-child(2) { grid-area: 1 / 3; }
+.face[data-n="4"] .pip:nth-child(3) { grid-area: 3 / 1; }
+.face[data-n="4"] .pip:nth-child(4) { grid-area: 3 / 3; }
+.face[data-n="5"] .pip:nth-child(1) { grid-area: 1 / 1; }
+.face[data-n="5"] .pip:nth-child(2) { grid-area: 1 / 3; }
+.face[data-n="5"] .pip:nth-child(3) { grid-area: 2 / 2; }
+.face[data-n="5"] .pip:nth-child(4) { grid-area: 3 / 1; }
+.face[data-n="5"] .pip:nth-child(5) { grid-area: 3 / 3; }
+.face[data-n="6"] .pip:nth-child(1) { grid-area: 1 / 1; }
+.face[data-n="6"] .pip:nth-child(2) { grid-area: 1 / 3; }
+.face[data-n="6"] .pip:nth-child(3) { grid-area: 2 / 1; }
+.face[data-n="6"] .pip:nth-child(4) { grid-area: 2 / 3; }
+.face[data-n="6"] .pip:nth-child(5) { grid-area: 3 / 1; }
+.face[data-n="6"] .pip:nth-child(6) { grid-area: 3 / 3; }
 .face-1 { transform: translateZ(40px); }
 .face-2 { transform: rotateX(180deg) translateZ(40px); }
 .face-3 { transform: rotateY(-90deg) translateZ(40px); }

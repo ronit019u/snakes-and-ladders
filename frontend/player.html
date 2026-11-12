@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CyberSnake · Player</title>
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=2">
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
 <body>
@@ -58,12 +58,12 @@
       <!-- 3D Dice -->
       <div classname="gap-5 bottom-3" id="dice-container">
         <div id="dice" class="dice-3d">
-          <div class="face face-1">⚀</div>
-          <div class="face face-2">⚁</div>
-          <div class="face face-3">⚃</div>
-          <div class="face face-4">⚂</div>
-          <div class="face face-5">⚅</div>
-          <div class="face face-6">⚄</div>
+          <div class="face face-1" data-n="1"><i class="pip"></i></div>
+          <div class="face face-2" data-n="2"><i class="pip"></i><i class="pip"></i></div>
+          <div class="face face-3" data-n="4"><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip"></i></div>
+          <div class="face face-4" data-n="3"><i class="pip"></i><i class="pip"></i><i class="pip"></i></div>
+          <div class="face face-5" data-n="6"><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip"></i></div>
+          <div class="face face-6" data-n="5"><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip"></i><i class="pip"></i></div>
         </div>
       </div>
 
