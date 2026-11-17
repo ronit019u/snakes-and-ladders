@@ -76,7 +76,36 @@ function applyPlayerFinish(session, player) {
 }
 
 
+function buildFinishEvents(session, playerId) {
+    const activePlayers = buildPublicPlayerList(session);
+
+    return [
+        {
+            event: 'move_update',
+            data: {
+                playerId,
+                currentTile: 100,
+                activePlayers
+            }
+        },
+        {
+            event: 'game_over',
+            data: {
+                sessionId: session.sessionId,
+                gameStatus: 'Completed',
+                winnerId: session.winnerId,
+                startedAt: session.startedAt || null,
+                completedAt: session.completedAt || null,
+                finalPlayerId: playerId,
+                finalTile: 100,
+                activePlayers
+            }
+        }
+    ];
+}
+
 module.exports = {
     buildPublicPlayerList,
-    applyPlayerFinish
+    applyPlayerFinish,
+    buildFinishEvents
 };

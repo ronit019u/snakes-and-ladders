@@ -1,7 +1,7 @@
 // services/gameService.js
 const { readDB, writeDB, generateId, generateRoomId } = require('./dbService');
 const gameLogic = require('./gameLogic');
-const { buildPublicPlayerList, applyPlayerFinish } = require('./playerHelpers');
+const { buildPublicPlayerList, applyPlayerFinish, buildFinishEvents } = require('./playerHelpers');
 const { CHARACTERS, getCharacter, getNextCharacterId } = require('./characters');
 
 // 颜色池（25种，来自 SRS 9.3）
@@ -369,10 +369,7 @@ function move({ sessionId, playerId, targetTile, questionId, selectedOption }) {
                 const result = applyPlayerFinish(session, player);
                 writeDB(db);
                 if (result.gameStatus === 'Completed') {
-                    events.push({
-                        event: 'game_over',
-                        data: { winnerId: result.winnerId, activePlayers: buildPublicPlayerList(session) }
-                    });
+                    events.push(...buildFinishEvents(session, playerId));
                 } else {
                     events.push({
                         event: 'move_update',
@@ -493,10 +490,7 @@ function move({ sessionId, playerId, targetTile, questionId, selectedOption }) {
             const result = applyPlayerFinish(session, player);
             writeDB(db);
             if (result.gameStatus === 'Completed') {
-                events.push({
-                    event: 'game_over',
-                    data: { winnerId: result.winnerId, activePlayers: buildPublicPlayerList(session) }
-                });
+                events.push(...buildFinishEvents(session, playerId));
             } else {
                 events.push({
                     event: 'move_update',
@@ -654,10 +648,7 @@ function useItem({ sessionId, playerId, itemType, targetPlayerId }) {
             const result = applyPlayerFinish(session, player);
             writeDB(db);
             if (result.gameStatus === 'Completed') {
-                events.push({
-                    event: 'game_over',
-                    data: { winnerId: result.winnerId, activePlayers: buildPublicPlayerList(session) }
-                });
+                events.push(...buildFinishEvents(session, playerId));
             } else {
                 events.push({
                     event: 'move_update',

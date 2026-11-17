@@ -29,6 +29,8 @@ export async function pollState() {
     renderTokens(r.data.activePlayers);
   }
   if (r.data.gameStatus === 'Completed') {
+    renderTokens(r.data.activePlayers);
+    renderRoster(r.data.activePlayers);
     handleGameOver({ winnerId: r.data.winnerId, activePlayers: r.data.activePlayers });
   }
 }

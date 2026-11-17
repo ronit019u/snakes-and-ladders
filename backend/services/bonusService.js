@@ -1,7 +1,7 @@
 // services/bonusService.js
 const { readDB, writeDB, generateId } = require('./dbService');
 const gameLogic = require('./gameLogic');
-const { buildPublicPlayerList, applyPlayerFinish } = require('./playerHelpers');
+const { buildPublicPlayerList, applyPlayerFinish, buildFinishEvents } = require('./playerHelpers');
 
 const activeBonusRounds = {};
 
@@ -158,13 +158,7 @@ function submitBonusAnswerLogic(sessionId, playerId, bonusRoundId, selectedOptio
         });
 
         if (session.gameStatus === 'Completed') {
-            events.push({
-                event: 'game_over',
-                data: {
-                    winnerId: session.winnerId,
-                    activePlayers: buildPublicPlayerList(session)
-                }
-            });
+            events.push(...buildFinishEvents(session, playerId));
         } else if (newTile === 100) {
             events.push({
                 event: 'move_update',

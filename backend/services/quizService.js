@@ -2,7 +2,7 @@
 const { readDB, writeDB } = require('./dbService');
 const gameLogic = require('./gameLogic');
 
-function getRandomQuestion(sessionId) {
+function getRandomQuestion(sessionId, playerId) {
     try {
         const db = readDB();
         const session = db.sessions[sessionId];
